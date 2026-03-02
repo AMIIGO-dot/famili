@@ -8,6 +8,9 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
+// Keep in sync with authStore.ts
+const DEV_BYPASS = true;
+
 type Family = Database['public']['Tables']['families']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 type Subscription = Database['public']['Tables']['subscriptions']['Row'];
@@ -42,6 +45,25 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   fetchFamily: async (userId: string) => {
+    if (DEV_BYPASS) {
+      set({
+        family: {
+          id: 'dev-family-id',
+          name: 'Familjen Ekstrand',
+          owner_id: 'dev-user-id',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as unknown as Family,
+        members: [
+          { id: 'dev-member-1', family_id: 'dev-family-id', name: 'Simon', color: '#5B9CF6', role: 'parent', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { id: 'dev-member-2', family_id: 'dev-family-id', name: 'Emma',  color: '#F97B8B', role: 'parent', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { id: 'dev-member-3', family_id: 'dev-family-id', name: 'Liam',  color: '#68D9A4', role: 'child',  created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        ] as unknown as Member[],
+        isLoading: false,
+      });
+      return;
+    }
+
     set({ isLoading: true });
     try {
       const { data, error } = await supabase

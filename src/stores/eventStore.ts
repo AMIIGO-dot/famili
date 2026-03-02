@@ -12,6 +12,9 @@ import { supabase } from '../lib/supabase';
 import { generateOccurrences } from '../lib/time';
 import type { Database } from '../lib/database.types';
 
+// Keep in sync with authStore.ts
+const DEV_BYPASS = true;
+
 type Event = Database['public']['Tables']['events']['Row'];
 type EventInsert = Database['public']['Tables']['events']['Insert'];
 type EventUpdate = Database['public']['Tables']['events']['Update'];
@@ -44,6 +47,46 @@ export const useEventsStore = create<EventsState>((set, get) => ({
   isLoading: false,
 
   fetchEventsForWeek: async (familyId, rangeStart, rangeEnd) => {
+    if (DEV_BYPASS) {
+      // Seed some fake events so the calendar has something to render
+      const base = new Date(rangeStart);
+      base.setHours(9, 0, 0, 0);
+      const tomorrow = new Date(base);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(15, 0, 0, 0);
+
+      set({
+        events: [
+          {
+            id: 'dev-event-1',
+            family_id: 'dev-family-id',
+            title: 'Frukost ihop',
+            type: 'activity',
+            start_time_utc: base.toISOString(),
+            end_time_utc: new Date(base.getTime() + 60 * 60 * 1000).toISOString(),
+            member_ids: ['dev-member-1', 'dev-member-2', 'dev-member-3'],
+            recurrence_rule: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: 'dev-event-2',
+            family_id: 'dev-family-id',
+            title: 'Fotbollsträning – Liam',
+            type: 'activity',
+            start_time_utc: tomorrow.toISOString(),
+            end_time_utc: new Date(tomorrow.getTime() + 90 * 60 * 1000).toISOString(),
+            member_ids: ['dev-member-3'],
+            recurrence_rule: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ] as unknown as Event[],
+        isLoading: false,
+      });
+      return;
+    }
+
     set({ isLoading: true });
     try {
       // Fetch one-time events within the range
@@ -126,6 +169,17 @@ export const useEventsStore = create<EventsState>((set, get) => ({
   },
 
   createEvent: async (event) => {
+    if (DEV_BYPASS) {
+      const fake = {
+        ...event,
+        id: `dev-event-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as unknown as Event;
+      set((state) => ({ events: [...state.events, fake] }));
+      return fake;
+    }
+
     const { data, error } = await supabase
       .from('events')
       .insert(event)

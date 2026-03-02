@@ -16,25 +16,34 @@
     "signOut": "Abmelden",
     "emailLabel": "E-Mail",
     "emailPlaceholder": "deine@email.de",
-    "magicLinkSent": "Prüfe deine E-Mail für einen magischen Link",
-    "sendMagicLink": "Magischen Link senden",
+    "sendCode": "Code senden",
+    "otpSent": "Wir haben einen 6-stelligen Code an {{email}} gesendet. Gib ihn unten ein.",
+    "otpLabel": "Code",
+    "verifyCode": "Bestätigen",
+    "changeEmail": "Andere E-Mail verwenden",
     "orSignInWithApple": "Oder mit Apple anmelden"
   },
   "onboarding": {
     "welcome": "Willkommen bei FAMILJ",
     "tagline": "Volle Kontrolle über deine Woche. Ohne Stress.",
+    "step1Title": "Wie heißt eure Familie?",
+    "step2Title": "Wer gehört zur Familie?",
     "createFamily": "Deine Familie erstellen",
     "familyNameLabel": "Familienname",
     "familyNamePlaceholder": "Die Familie Müller",
-    "addMember": "Mitglied hinzufügen",
+    "addMember": "+ Person hinzufügen",
     "memberNameLabel": "Name",
+    "memberNamePlaceholder": "Z.B. Emma",
     "memberColorLabel": "Farbe",
     "memberRoleParent": "Elternteil",
-    "memberRoleChild": "Kind"
+    "memberRoleChild": "Kind",
+    "getStarted": "Los geht's!",
+    "next": "Weiter"
   },
   "weeklyView": {
     "title": "Diese Woche",
     "today": "Heute",
+    "all": "Alle",
     "noEvents": "Keine Termine",
     "addEvent": "Termin hinzufügen",
     "weekNumber": "Woche {{number}}"
@@ -64,7 +73,15 @@
     "editRecurrence": "Wiederkehrenden Termin bearbeiten",
     "editThisOnly": "Nur dieser Termin",
     "editThisAndFuture": "Dieser und folgende",
-    "editAll": "Alle Termine"
+    "editAll": "Alle Termine",
+    "startTimeLabel": "Beginn",
+    "endTimeLabel": "Ende",
+    "durationLabel": "Dauer",
+    "allDay": "Ganztägig",
+    "save": "Termin speichern",
+    "sectionWho": "Wer",
+    "sectionWhat": "Was",
+    "sectionWhen": "Wann"
   },
   "settings": {
     "title": "Einstellungen",
@@ -77,7 +94,13 @@
     "timeFormat12h": "12-Stunden",
     "timeFormat24h": "24-Stunden",
     "subscription": "Abonnement",
-    "account": "Konto"
+    "account": "Konto",
+    "detectedTimezone": "Automatisch erkannt",
+    "members": "Familienmitglieder",
+    "familyName": "Familienname"
+  },
+  "family": {
+    "confirmDelete": "{{name}} aus der Familie entfernen?"
   },
   "subscription": {
     "premium": "FAMILJ Premium",

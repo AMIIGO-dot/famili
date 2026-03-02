@@ -20,14 +20,9 @@ const isConfigured =
   supabaseAnonKey.length > 20;
 
 if (!isConfigured) {
-  console.warn(
-    '[FAMILJ] Supabase is not configured. ' +
-      'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env'
-  );
+  console.warn('[FAMILJ] Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env');
 }
 
-// Use a valid-format fallback so createClient never throws at import time.
-// Actual network calls will fail gracefully until real credentials are set.
 const url = isConfigured ? supabaseUrl : 'https://placeholder.supabase.co';
 const key = isConfigured ? supabaseAnonKey : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
 

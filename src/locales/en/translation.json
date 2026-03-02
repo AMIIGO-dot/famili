@@ -16,25 +16,34 @@
     "signOut": "Sign Out",
     "emailLabel": "Email",
     "emailPlaceholder": "your@email.com",
-    "magicLinkSent": "Check your email for a magic link",
-    "sendMagicLink": "Send Magic Link",
+    "sendCode": "Send Code",
+    "otpSent": "We sent a 6-digit code to {{email}}. Enter it below.",
+    "otpLabel": "Code",
+    "verifyCode": "Verify",
+    "changeEmail": "Use a different email",
     "orSignInWithApple": "Or sign in with Apple"
   },
   "onboarding": {
     "welcome": "Welcome to FAMILJ",
     "tagline": "Full control of your week. Without stress.",
+    "step1Title": "What's your family called?",
+    "step2Title": "Who's in the family?",
     "createFamily": "Create Your Family",
     "familyNameLabel": "Family name",
     "familyNamePlaceholder": "The Johansson Family",
-    "addMember": "Add Member",
+    "addMember": "+ Add person",
     "memberNameLabel": "Name",
+    "memberNamePlaceholder": "E.g. Emma",
     "memberColorLabel": "Color",
     "memberRoleParent": "Parent",
-    "memberRoleChild": "Child"
+    "memberRoleChild": "Child",
+    "getStarted": "Let's go!",
+    "next": "Next"
   },
   "weeklyView": {
     "title": "This Week",
     "today": "Today",
+    "all": "All",
     "noEvents": "No events",
     "addEvent": "Add event",
     "weekNumber": "Week {{number}}"
@@ -64,7 +73,15 @@
     "editRecurrence": "Edit recurring event",
     "editThisOnly": "This event only",
     "editThisAndFuture": "This and future events",
-    "editAll": "All events"
+    "editAll": "All events",
+    "startTimeLabel": "Start",
+    "endTimeLabel": "End",
+    "durationLabel": "Duration",
+    "allDay": "All day",
+    "save": "Save event",
+    "sectionWho": "Who",
+    "sectionWhat": "What",
+    "sectionWhen": "When"
   },
   "settings": {
     "title": "Settings",
@@ -77,7 +94,13 @@
     "timeFormat12h": "12-hour",
     "timeFormat24h": "24-hour",
     "subscription": "Subscription",
-    "account": "Account"
+    "account": "Account",
+    "detectedTimezone": "Detected automatically",
+    "members": "Family Members",
+    "familyName": "Family Name"
+  },
+  "family": {
+    "confirmDelete": "Remove {{name}} from the family?"
   },
   "subscription": {
     "premium": "FAMILJ Premium",

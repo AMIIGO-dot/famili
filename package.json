@@ -37,6 +37,9 @@
     "typescript": "~5.9.2"
   },
   "private": true,
+  "browser": {
+    "whatwg-fetch": "./src/shims/whatwg-fetch.js"
+  },
   "overrides": {
     "@expo/metro-runtime": "~5.0.0"
   }

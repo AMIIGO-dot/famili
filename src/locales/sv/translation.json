@@ -16,25 +16,34 @@
     "signOut": "Logga ut",
     "emailLabel": "E-post",
     "emailPlaceholder": "din@epost.se",
-    "magicLinkSent": "Kolla din e-post för en magisk länk",
-    "sendMagicLink": "Skicka magisk länk",
+    "sendCode": "Skicka kod",
+    "otpSent": "Vi skickade en 6-siffrig kod till {{email}}. Ange den nedan.",
+    "otpLabel": "Kod",
+    "verifyCode": "Verifiera",
+    "changeEmail": "Använd en annan e-post",
     "orSignInWithApple": "Eller logga in med Apple"
   },
   "onboarding": {
     "welcome": "Välkommen till FAMILJ",
     "tagline": "Full koll på veckan. Utan stress.",
+    "step1Title": "Vad heter er familj?",
+    "step2Title": "Vilka är i familjen?",
     "createFamily": "Skapa din familj",
     "familyNameLabel": "Familjenamn",
     "familyNamePlaceholder": "Familjen Johansson",
-    "addMember": "Lägg till person",
+    "addMember": "+ Lägg till person",
     "memberNameLabel": "Namn",
+    "memberNamePlaceholder": "T.ex. Emma",
     "memberColorLabel": "Färg",
     "memberRoleParent": "Förälder",
-    "memberRoleChild": "Barn"
+    "memberRoleChild": "Barn",
+    "getStarted": "Kör igång!",
+    "next": "Nästa"
   },
   "weeklyView": {
     "title": "Den här veckan",
     "today": "Idag",
+    "all": "Alla",
     "noEvents": "Inga händelser",
     "addEvent": "Lägg till",
     "weekNumber": "Vecka {{number}}"
@@ -64,7 +73,15 @@
     "editRecurrence": "Redigera återkommande händelse",
     "editThisOnly": "Bara denna",
     "editThisAndFuture": "Denna och framtida",
-    "editAll": "Alla händelser"
+    "editAll": "Alla händelser",
+    "startTimeLabel": "Start",
+    "endTimeLabel": "Slut",
+    "durationLabel": "Längd",
+    "allDay": "Heldag",
+    "save": "Spara händelse",
+    "sectionWho": "Vem",
+    "sectionWhat": "Vad",
+    "sectionWhen": "När"
   },
   "settings": {
     "title": "Inställningar",
@@ -77,7 +94,13 @@
     "timeFormat12h": "12-timmar",
     "timeFormat24h": "24-timmar",
     "subscription": "Prenumeration",
-    "account": "Konto"
+    "account": "Konto",
+    "detectedTimezone": "Identifieras automatiskt",
+    "members": "Familjemedlemmar",
+    "familyName": "Familjenamn"
+  },
+  "family": {
+    "confirmDelete": "Ta bort {{name}} ur familjen?"
   },
   "subscription": {
     "premium": "FAMILJ Premium",

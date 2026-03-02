@@ -1,41 +1,57 @@
 /**
- * FAMILJ – Auth Screen (Magic Link + Apple Sign In)
+ * FAMILJ – Auth Screen (OTP code sign-in)
  */
 
 import React, { useState } from 'react';
 import {
-  View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../src/lib/supabase';
 
 export default function AuthScreen() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [step, setStep] = useState<'email' | 'otp'>('email');
 
-  const handleMagicLink = async () => {
+  const handleSendOtp = async () => {
     if (!email.trim()) return;
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
-        options: {
-          shouldCreateUser: true,
-        },
+        options: { shouldCreateUser: true },
       });
       if (error) throw error;
-      setSent(true);
+      setStep('otp');
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err.message ?? t('common.error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp.trim()) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: otp.trim(),
+        type: 'email',
+      });
+      if (error) throw error;
+      // Navigation handled automatically by _layout.tsx auth guard
     } catch (err: any) {
       Alert.alert(t('common.error'), err.message ?? t('common.error'));
     } finally {
@@ -52,11 +68,7 @@ export default function AuthScreen() {
         <Text style={styles.appName}>{t('common.appName')}</Text>
         <Text style={styles.tagline}>{t('onboarding.tagline')}</Text>
 
-        {sent ? (
-          <View style={styles.sentBox}>
-            <Text style={styles.sentText}>{t('auth.magicLinkSent')}</Text>
-          </View>
-        ) : (
+        {step === 'email' ? (
           <>
             <Text style={styles.label}>{t('auth.emailLabel')}</Text>
             <TextInput
@@ -69,17 +81,45 @@ export default function AuthScreen() {
               autoCapitalize="none"
               autoCorrect={false}
             />
-
             <TouchableOpacity
               style={[styles.button, loading && { opacity: 0.6 }]}
-              onPress={handleMagicLink}
+              onPress={handleSendOtp}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#FAFAF8" />
               ) : (
-                <Text style={styles.buttonText}>{t('auth.sendMagicLink')}</Text>
+                <Text style={styles.buttonText}>{t('auth.sendCode')}</Text>
               )}
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.sentText}>{t('auth.otpSent', { email })}</Text>
+            <Text style={styles.label}>{t('auth.otpLabel')}</Text>
+            <TextInput
+              style={[styles.input, styles.otpInput]}
+              placeholder="000000"
+              placeholderTextColor="#AEAEB2"
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+            />
+            <TouchableOpacity
+              style={[styles.button, loading && { opacity: 0.6 }]}
+              onPress={handleVerifyOtp}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FAFAF8" />
+              ) : (
+                <Text style={styles.buttonText}>{t('auth.verifyCode')}</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.backBtn} onPress={() => setStep('email')}>
+              <Text style={styles.backText}>{t('auth.changeEmail')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -142,16 +182,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.3,
   },
-  sentBox: {
-    backgroundColor: '#E8F4E8',
-    borderRadius: 12,
-    padding: 20,
+  sentText: {
+    color: '#6E6E7A',
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  otpInput: {
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: 8,
+    textAlign: 'center',
+  },
+  backBtn: {
+    marginTop: 16,
     alignItems: 'center',
   },
-  sentText: {
-    color: '#1E6B1E',
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
+  backText: {
+    color: '#6E6E7A',
+    fontSize: 14,
   },
 });

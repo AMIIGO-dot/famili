@@ -7,11 +7,11 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
@@ -96,11 +96,12 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Timezone (read-only display for now) */}
+        {/* Timezone (read-only display) */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t('settings.timezone')}</Text>
           <View style={styles.option}>
             <Text style={styles.optionText}>{timezone}</Text>
+            <Text style={styles.detectedLabel}>{t('settings.detectedTimezone')}</Text>
           </View>
         </View>
 
@@ -175,6 +176,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
+  },
+  detectedLabel: {
+    fontSize: 11,
+    color: '#AEAEB2',
+    fontStyle: 'italic',
   },
   signOutBtn: {
     marginTop: 8,
