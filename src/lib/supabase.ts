@@ -13,14 +13,24 @@ import type { Database } from './database.types';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
+const isConfigured =
+  supabaseUrl.startsWith('https://') &&
+  !supabaseUrl.includes('placeholder') &&
+  supabaseAnonKey.length > 20;
+
+if (!isConfigured) {
   console.warn(
-    '[FAMILJ] Supabase URL or Anon Key is missing. ' +
+    '[FAMILJ] Supabase is not configured. ' +
       'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env'
   );
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Use a valid-format fallback so createClient never throws at import time.
+// Actual network calls will fail gracefully until real credentials are set.
+const url = isConfigured ? supabaseUrl : 'https://placeholder.supabase.co';
+const key = isConfigured ? supabaseAnonKey : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
+
+export const supabase = createClient<Database>(url, key, {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,
@@ -28,3 +38,5 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+export { isConfigured as isSupabaseConfigured };
