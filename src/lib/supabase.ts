@@ -6,6 +6,7 @@
  * via Expo's EXPO_PUBLIC_ prefix convention.
  */
 
+import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Database } from './database.types';
