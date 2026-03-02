@@ -36,6 +36,8 @@ export default function WeeklyViewScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>(ALL_ID);
+  const [pressedDate, setPressedDate] = useState<Date | undefined>(undefined);
+  const [pressedEvent, setPressedEvent] = useState<EventOccurrence | undefined>(undefined);
 
   const { user } = useAuthStore();
   const { family, members } = useFamilyStore();
@@ -168,7 +170,13 @@ export default function WeeklyViewScreen() {
             .format(day)
             .toUpperCase();
           return (
-            <View key={idx} style={[styles.dayRow, today_ && styles.dayRowToday]}>
+            <TouchableOpacity
+              key={idx}
+              activeOpacity={1}
+              delayLongPress={350}
+              onLongPress={() => { setPressedDate(day); setPressedEvent(undefined); setSheetVisible(true); }}
+              style={[styles.dayRow, today_ && styles.dayRowToday]}
+            >
               {/* Left: day label */}
               <View style={styles.dayHeader}>
                 <Text style={[styles.dayName, today_ && styles.dayNameToday]}>{dayName}</Text>
@@ -188,7 +196,12 @@ export default function WeeklyViewScreen() {
                     // Show small avatar dots for assigned members
                     const assignedMembers = members.filter((m) => evt.memberIds.includes(m.id));
                     return (
-                      <View key={eIdx} style={styles.eventCard}>
+                      <TouchableOpacity
+                        key={eIdx}
+                        activeOpacity={0.75}
+                        onPress={() => { setPressedEvent(evt); setSheetVisible(true); }}
+                        style={styles.eventCard}
+                      >
                         <View style={[styles.eventAccent, { backgroundColor: accentColor }]} />
                         <View style={styles.eventBody}>
                           <View style={styles.eventRow}>
@@ -205,12 +218,12 @@ export default function WeeklyViewScreen() {
                             </View>
                           )}
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
         {/* bottom padding so FAB doesn't cover last event */}
@@ -218,11 +231,17 @@ export default function WeeklyViewScreen() {
       </ScrollView>
 
       {/* ── FAB ── */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => setSheetVisible(true)}>
+      <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={() => { setPressedDate(undefined); setPressedEvent(undefined); setSheetVisible(true); }}>
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
 
-      <EventCreateSheet visible={sheetVisible} onClose={() => setSheetVisible(false)} />
+      <EventCreateSheet
+        visible={sheetVisible}
+        onClose={() => { setSheetVisible(false); setPressedDate(undefined); setPressedEvent(undefined); }}
+        initialDate={pressedDate ?? weekRange.start}
+        lockedDate={pressedDate}
+        editEvent={pressedEvent}
+      />
     </SafeAreaView>
   );
 }
@@ -325,17 +344,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 28,
     right: 24,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#2C2C2E',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
   },
   fabIcon: { color: '#FAFAF8', fontSize: 28, lineHeight: 32, fontWeight: '300' },
 });

@@ -196,6 +196,14 @@ export const useEventsStore = create<EventsState>((set, get) => ({
   },
 
   updateEvent: async (id, updates) => {
+    if (DEV_BYPASS) {
+      set((state) => ({
+        events: state.events.map((e) =>
+          e.id === id ? { ...e, ...updates, updated_at: new Date().toISOString() } : e
+        ),
+      }));
+      return;
+    }
     const { error } = await supabase
       .from('events')
       .update(updates)

@@ -79,6 +79,8 @@
     "durationLabel": "Dauer",
     "allDay": "Ganztägig",
     "save": "Termin speichern",
+    "saveChanges": "Änderungen speichern",
+    "deleteEvent": "Termin löschen",
     "sectionWho": "Wer",
     "sectionWhat": "Was",
     "sectionWhen": "Wann"

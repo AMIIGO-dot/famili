@@ -79,6 +79,8 @@
     "durationLabel": "Duration",
     "allDay": "All day",
     "save": "Save event",
+    "saveChanges": "Save changes",
+    "deleteEvent": "Delete event",
     "sectionWho": "Who",
     "sectionWhat": "What",
     "sectionWhen": "When"

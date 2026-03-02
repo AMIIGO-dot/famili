@@ -79,6 +79,8 @@
     "durationLabel": "Längd",
     "allDay": "Heldag",
     "save": "Spara händelse",
+    "saveChanges": "Spara ändringar",
+    "deleteEvent": "Ta bort händelse",
     "sectionWho": "Vem",
     "sectionWhat": "Vad",
     "sectionWhen": "När"
