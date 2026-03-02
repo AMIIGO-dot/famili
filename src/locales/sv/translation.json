@@ -1,0 +1,99 @@
+{
+  "common": {
+    "appName": "FAMILJ",
+    "cancel": "Avbryt",
+    "save": "Spara",
+    "delete": "Ta bort",
+    "edit": "Redigera",
+    "close": "Stäng",
+    "done": "Klar",
+    "loading": "Laddar…",
+    "error": "Något gick fel",
+    "retry": "Försök igen"
+  },
+  "auth": {
+    "signIn": "Logga in",
+    "signOut": "Logga ut",
+    "emailLabel": "E-post",
+    "emailPlaceholder": "din@epost.se",
+    "magicLinkSent": "Kolla din e-post för en magisk länk",
+    "sendMagicLink": "Skicka magisk länk",
+    "orSignInWithApple": "Eller logga in med Apple"
+  },
+  "onboarding": {
+    "welcome": "Välkommen till FAMILJ",
+    "tagline": "Full koll på veckan. Utan stress.",
+    "createFamily": "Skapa din familj",
+    "familyNameLabel": "Familjenamn",
+    "familyNamePlaceholder": "Familjen Johansson",
+    "addMember": "Lägg till person",
+    "memberNameLabel": "Namn",
+    "memberColorLabel": "Färg",
+    "memberRoleParent": "Förälder",
+    "memberRoleChild": "Barn"
+  },
+  "weeklyView": {
+    "title": "Den här veckan",
+    "today": "Idag",
+    "noEvents": "Inga händelser",
+    "addEvent": "Lägg till",
+    "weekNumber": "Vecka {{number}}"
+  },
+  "events": {
+    "newEvent": "Ny händelse",
+    "editEvent": "Redigera händelse",
+    "titleLabel": "Titel",
+    "titlePlaceholder": "T.ex. Fotbollsträning",
+    "dateLabel": "Datum",
+    "timeLabel": "Tid",
+    "typeLabel": "Typ",
+    "typeActivity": "Aktivitet",
+    "typeHomework": "Läxa",
+    "typeTest": "Prov",
+    "typeOther": "Övrigt",
+    "forWhom": "Vem gäller det?",
+    "reminderLabel": "Påminnelse",
+    "reminderNone": "Ingen påminnelse",
+    "reminder1Hour": "1 timme innan",
+    "reminder1Day": "1 dag innan",
+    "recurrenceLabel": "Upprepa",
+    "recurrenceNone": "Aldrig",
+    "recurrenceWeekly": "Varje vecka",
+    "recurrenceBiweekly": "Varannan vecka",
+    "recurrenceWeekdays": "Varje vardag (mån–fre)",
+    "editRecurrence": "Redigera återkommande händelse",
+    "editThisOnly": "Bara denna",
+    "editThisAndFuture": "Denna och framtida",
+    "editAll": "Alla händelser"
+  },
+  "settings": {
+    "title": "Inställningar",
+    "language": "Språk",
+    "timezone": "Tidszon",
+    "weekStart": "Veckan börjar",
+    "weekStartMonday": "Måndag",
+    "weekStartSunday": "Söndag",
+    "timeFormat": "Tidsformat",
+    "timeFormat12h": "12-timmar",
+    "timeFormat24h": "24-timmar",
+    "subscription": "Prenumeration",
+    "account": "Konto"
+  },
+  "subscription": {
+    "premium": "FAMILJ Premium",
+    "currentPlan": "Nuvarande plan: {{plan}}",
+    "planFree": "Gratis",
+    "planMonthly": "Månadsvis",
+    "planYearly": "Årsvis",
+    "upgrade": "Uppgradera till Premium",
+    "features": {
+      "unlimitedMembers": "Obegränsat antal familjemedlemmar",
+      "aiParsing": "AI-tolkning av naturligt språk",
+      "sundaySummary": "Söndagssammanfattning",
+      "widget": "Hemskärmswidget",
+      "advancedRecurrence": "Avancerade upprepningsregler",
+      "pdfExport": "PDF-export"
+    },
+    "restorePurchases": "Återställ köp"
+  }
+}

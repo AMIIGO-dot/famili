@@ -1,0 +1,99 @@
+{
+  "common": {
+    "appName": "FAMILJ",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen",
+    "done": "Fertig",
+    "loading": "Laden…",
+    "error": "Etwas ist schiefgelaufen",
+    "retry": "Erneut versuchen"
+  },
+  "auth": {
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "emailLabel": "E-Mail",
+    "emailPlaceholder": "deine@email.de",
+    "magicLinkSent": "Prüfe deine E-Mail für einen magischen Link",
+    "sendMagicLink": "Magischen Link senden",
+    "orSignInWithApple": "Oder mit Apple anmelden"
+  },
+  "onboarding": {
+    "welcome": "Willkommen bei FAMILJ",
+    "tagline": "Volle Kontrolle über deine Woche. Ohne Stress.",
+    "createFamily": "Deine Familie erstellen",
+    "familyNameLabel": "Familienname",
+    "familyNamePlaceholder": "Die Familie Müller",
+    "addMember": "Mitglied hinzufügen",
+    "memberNameLabel": "Name",
+    "memberColorLabel": "Farbe",
+    "memberRoleParent": "Elternteil",
+    "memberRoleChild": "Kind"
+  },
+  "weeklyView": {
+    "title": "Diese Woche",
+    "today": "Heute",
+    "noEvents": "Keine Termine",
+    "addEvent": "Termin hinzufügen",
+    "weekNumber": "Woche {{number}}"
+  },
+  "events": {
+    "newEvent": "Neuer Termin",
+    "editEvent": "Termin bearbeiten",
+    "titleLabel": "Titel",
+    "titlePlaceholder": "Z.B. Fußballtraining",
+    "dateLabel": "Datum",
+    "timeLabel": "Uhrzeit",
+    "typeLabel": "Typ",
+    "typeActivity": "Aktivität",
+    "typeHomework": "Hausaufgaben",
+    "typeTest": "Test",
+    "typeOther": "Sonstiges",
+    "forWhom": "Für wen?",
+    "reminderLabel": "Erinnerung",
+    "reminderNone": "Keine Erinnerung",
+    "reminder1Hour": "1 Stunde vorher",
+    "reminder1Day": "1 Tag vorher",
+    "recurrenceLabel": "Wiederholen",
+    "recurrenceNone": "Nie",
+    "recurrenceWeekly": "Jede Woche",
+    "recurrenceBiweekly": "Alle zwei Wochen",
+    "recurrenceWeekdays": "Jeden Wochentag (Mo–Fr)",
+    "editRecurrence": "Wiederkehrenden Termin bearbeiten",
+    "editThisOnly": "Nur dieser Termin",
+    "editThisAndFuture": "Dieser und folgende",
+    "editAll": "Alle Termine"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "language": "Sprache",
+    "timezone": "Zeitzone",
+    "weekStart": "Woche beginnt am",
+    "weekStartMonday": "Montag",
+    "weekStartSunday": "Sonntag",
+    "timeFormat": "Zeitformat",
+    "timeFormat12h": "12-Stunden",
+    "timeFormat24h": "24-Stunden",
+    "subscription": "Abonnement",
+    "account": "Konto"
+  },
+  "subscription": {
+    "premium": "FAMILJ Premium",
+    "currentPlan": "Aktueller Plan: {{plan}}",
+    "planFree": "Kostenlos",
+    "planMonthly": "Monatlich",
+    "planYearly": "Jährlich",
+    "upgrade": "Auf Premium upgraden",
+    "features": {
+      "unlimitedMembers": "Unbegrenzte Familienmitglieder",
+      "aiParsing": "KI-Spracherkennung",
+      "sundaySummary": "Sonntagszusammenfassung",
+      "widget": "Startbildschirm-Widget",
+      "advancedRecurrence": "Erweiterte Wiederholungsregeln",
+      "pdfExport": "PDF-Export"
+    },
+    "restorePurchases": "Käufe wiederherstellen"
+  }
+}

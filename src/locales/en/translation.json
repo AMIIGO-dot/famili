@@ -1,0 +1,99 @@
+{
+  "common": {
+    "appName": "FAMILJ",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "done": "Done",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Retry"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "magicLinkSent": "Check your email for a magic link",
+    "sendMagicLink": "Send Magic Link",
+    "orSignInWithApple": "Or sign in with Apple"
+  },
+  "onboarding": {
+    "welcome": "Welcome to FAMILJ",
+    "tagline": "Full control of your week. Without stress.",
+    "createFamily": "Create Your Family",
+    "familyNameLabel": "Family name",
+    "familyNamePlaceholder": "The Johansson Family",
+    "addMember": "Add Member",
+    "memberNameLabel": "Name",
+    "memberColorLabel": "Color",
+    "memberRoleParent": "Parent",
+    "memberRoleChild": "Child"
+  },
+  "weeklyView": {
+    "title": "This Week",
+    "today": "Today",
+    "noEvents": "No events",
+    "addEvent": "Add event",
+    "weekNumber": "Week {{number}}"
+  },
+  "events": {
+    "newEvent": "New Event",
+    "editEvent": "Edit Event",
+    "titleLabel": "Title",
+    "titlePlaceholder": "E.g. Football practice",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "typeLabel": "Type",
+    "typeActivity": "Activity",
+    "typeHomework": "Homework",
+    "typeTest": "Test",
+    "typeOther": "Other",
+    "forWhom": "For whom?",
+    "reminderLabel": "Reminder",
+    "reminderNone": "No reminder",
+    "reminder1Hour": "1 hour before",
+    "reminder1Day": "1 day before",
+    "recurrenceLabel": "Repeat",
+    "recurrenceNone": "Never",
+    "recurrenceWeekly": "Every week",
+    "recurrenceBiweekly": "Every two weeks",
+    "recurrenceWeekdays": "Every weekday (Mon–Fri)",
+    "editRecurrence": "Edit recurring event",
+    "editThisOnly": "This event only",
+    "editThisAndFuture": "This and future events",
+    "editAll": "All events"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "timezone": "Time Zone",
+    "weekStart": "Week starts on",
+    "weekStartMonday": "Monday",
+    "weekStartSunday": "Sunday",
+    "timeFormat": "Time format",
+    "timeFormat12h": "12-hour",
+    "timeFormat24h": "24-hour",
+    "subscription": "Subscription",
+    "account": "Account"
+  },
+  "subscription": {
+    "premium": "FAMILJ Premium",
+    "currentPlan": "Current plan: {{plan}}",
+    "planFree": "Free",
+    "planMonthly": "Monthly",
+    "planYearly": "Yearly",
+    "upgrade": "Upgrade to Premium",
+    "features": {
+      "unlimitedMembers": "Unlimited family members",
+      "aiParsing": "AI natural language parsing",
+      "sundaySummary": "Sunday summary",
+      "widget": "Home screen widget",
+      "advancedRecurrence": "Advanced recurring rules",
+      "pdfExport": "PDF export"
+    },
+    "restorePurchases": "Restore Purchases"
+  }
+}
