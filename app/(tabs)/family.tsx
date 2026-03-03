@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { useFamilyStore } from '../../src/stores/familyStore';
 
 const COLORS = [
@@ -117,11 +118,21 @@ export default function FamilyScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.logoText}>FAMILJ</Text>
-        {family && <Text style={styles.familyName}>{family.name}</Text>}
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>
+            {family?.name ?? 'Family'}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {members.length} {members.length === 1 ? t('onboarding.memberNameLabel') : t('settings.members')}
+          </Text>
+        </View>
+        <TouchableOpacity style={styles.addIconBtn} onPress={openAdd} activeOpacity={0.75}>
+          <Ionicons name="person-add" size={18} color="#2C2C2E" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -231,19 +242,55 @@ export default function FamilyScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#F2F3F5' },
 
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 14,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEB',
+    borderBottomColor: '#E5E5EA',
+  },
+  headerLeft: { flex: 1 },
+  headerBrand: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#AEAEB2',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#2C2C2E',
+    letterSpacing: -0.3,
+    lineHeight: 30,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#9999A6',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  addIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F2F3F5',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoText: {
     fontSize: 22,
@@ -312,7 +359,7 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
   kavWrap: { flex: 1, justifyContent: 'flex-end' },
   modalCard: {
-    backgroundColor: '#FAFAF8',
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -321,7 +368,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#2C2C2E', marginBottom: 20 },
   nameInput: {
     fontSize: 17,
-    backgroundColor: '#F0F0EC',
+    backgroundColor: '#F2F3F5',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -341,7 +388,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#F0F0EC',
+    backgroundColor: '#F2F3F5',
     alignItems: 'center',
   },
   roleChipSel: { backgroundColor: '#2C2C2E' },
@@ -354,7 +401,7 @@ const styles = StyleSheet.create({
   cancelBtn: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: '#F0F0EC',
+    backgroundColor: '#F2F3F5',
     borderRadius: 12,
     alignItems: 'center',
   },

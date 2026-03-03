@@ -24,6 +24,7 @@ import { useEventsStore, EventOccurrence } from '../stores/eventStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useAuthStore } from '../stores/authStore';
 import { convertUTCToLocal } from '../lib/time';
+import type { RecurrenceRule } from '../lib/time';
 
 const EVENT_TYPES = ['activity', 'homework', 'test', 'other'] as const;
 type EventType = typeof EVENT_TYPES[number];
@@ -90,6 +91,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const [endMinute, setEndMinute] = useState(0);
   const [eventType, setEventType] = useState<EventType>('activity');
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [recurrence, setRecurrence] = useState<'none' | 'weekly' | 'biweekly' | 'weekdays'>('none');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -121,6 +123,8 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       setEndMinute(localEnd.getMinutes());
       setEventType(editEvent.type as EventType);
       setSelectedMemberIds(editEvent.memberIds);
+      const freq = (editEvent.recurrenceRule as RecurrenceRule | null)?.frequency;
+      setRecurrence(freq ?? 'none');
     } else if (visible && !editEvent) {
       // Reset to defaults for new event
       setTitle('');
@@ -129,6 +133,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       setEndHour(10); setEndMinute(0);
       setEventType('activity');
       setSelectedMemberIds([]);
+      setRecurrence('none');
     }
   }, [visible, editEvent?.eventId]);
 
@@ -194,6 +199,12 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       end.setHours(endHour, endMinute, 0, 0);
       // If end is before or equal to start (e.g. overnight edge), add one day
       if (end <= start) end.setDate(end.getDate() + 1);
+      const recurrenceRule: RecurrenceRule | null = recurrence === 'none' ? null : {
+        frequency: recurrence,
+        interval: recurrence === 'biweekly' ? 2 : 1,
+        timezone,
+      };
+
       if (editEvent) {
         await updateEvent(editEvent.eventId, {
           title: title.trim(),
@@ -201,6 +212,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           start_time_utc: start.toISOString(),
           end_time_utc: end.toISOString(),
           member_ids: selectedMemberIds.length > 0 ? selectedMemberIds : members.map((m) => m.id),
+          recurrence_rule: recurrenceRule as any,
         });
       } else {
         await createEvent({
@@ -212,11 +224,12 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           timezone,
           created_by: user?.id ?? '',
           member_ids: selectedMemberIds.length > 0 ? selectedMemberIds : members.map((m) => m.id),
-          recurrence_rule: null,
+          recurrence_rule: recurrenceRule as any,
         });
       }
       setTitle(''); setSelectedDateIdx(0); setStartHour(9); setStartMinute(0);
       setEndHour(10); setEndMinute(0); setEventType('activity'); setSelectedMemberIds([]);
+      setRecurrence('none');
       close();
     } finally {
       setSaving(false);
@@ -243,10 +256,12 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
         <Pressable style={StyleSheet.absoluteFill} onPress={close} />
         <Animated.View style={[styles.sheet, { paddingBottom: keyboardVisible ? 8 : insets.bottom + 8, transform: [{ translateY: slideAnim }] }]}>
           {/* Handle + cancel */}
-          <View style={styles.handle} />
-          <TouchableOpacity style={styles.cancelBtn} onPress={close}>
-            <Text style={styles.cancelText}>{t('common.cancel')}</Text>
-          </TouchableOpacity>
+          <View style={styles.sheetTopRow}>
+            <View style={styles.handle} />
+            <TouchableOpacity style={styles.cancelBtn} onPress={close}>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
@@ -383,6 +398,33 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
               </View>
             </View>
 
+            {/* REPEAT */}
+            <View style={styles.divider} />
+            <Text style={styles.sectionLabel}>{t('events.recurrenceLabel')}</Text>
+            <View style={styles.recurrenceRow}>
+              {(['none', 'weekly', 'biweekly', 'weekdays'] as const).map((opt) => {
+                const sel = recurrence === opt;
+                const labelKey = opt === 'none'
+                  ? 'events.recurrenceNone'
+                  : opt === 'weekly'
+                  ? 'events.recurrenceWeekly'
+                  : opt === 'biweekly'
+                  ? 'events.recurrenceBiweekly'
+                  : 'events.recurrenceWeekdays';
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[styles.recurrenceChip, sel && styles.recurrenceChipSel]}
+                    onPress={() => setRecurrence(opt)}
+                  >
+                    <Text style={[styles.recurrenceChipText, sel && styles.recurrenceChipTextSel]}>
+                      {t(labelKey)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             {/* Save */}
             <TouchableOpacity
               style={[styles.saveBtn, (!title.trim() || saving) && styles.saveBtnOff]}
@@ -416,7 +458,7 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.3)' },
   kav: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#FAFAF8',
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -428,8 +470,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 14,
   },
-  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: '#D8D8DC', marginBottom: 8 },
-  cancelBtn: { position: 'absolute', top: 18, right: 20 },
+  sheetTopRow: { alignItems: 'center', paddingTop: 2, paddingBottom: 10 },
+  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: '#D8D8DC', marginBottom: 0 },
+  cancelBtn: { position: 'absolute', right: 0, top: 0, bottom: 0, justifyContent: 'center', paddingHorizontal: 4 },
   cancelText: { fontSize: 15, color: '#9999A6' },
 
   sectionLabel: {
@@ -469,7 +512,7 @@ const styles = StyleSheet.create({
   },
   lockedDateDay: { fontSize: 13, fontWeight: '700', color: '#FAFAF8', textTransform: 'capitalize' },
   lockedDateFull: { fontSize: 13, color: 'rgba(255,255,255,0.55)' },
-  dateChip: { alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: '#F0F0EC', minWidth: 52 },
+  dateChip: { alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: '#F2F3F5', minWidth: 52 },
   dateChipSel: { backgroundColor: '#2C2C2E' },
   dateDay: { fontSize: 10, fontWeight: '600', color: '#9999A6', textTransform: 'uppercase', letterSpacing: 0.4 },
   dateNum: { fontSize: 20, fontWeight: '700', color: '#2C2C2E', lineHeight: 24 },
@@ -477,7 +520,7 @@ const styles = StyleSheet.create({
 
   // Time + Duration row
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, marginBottom: 4, gap: 8 },
-  timeStepper: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F0EC', borderRadius: 12, overflow: 'hidden' },
+  timeStepper: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F3F5', borderRadius: 12, overflow: 'hidden' },
   stepBtn: { paddingHorizontal: 14, paddingVertical: 10 },
   stepBtnText: { fontSize: 20, color: '#2C2C2E', lineHeight: 24 },
   timeLabel: { flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '700', color: '#2C2C2E', letterSpacing: 0.3 },
@@ -491,10 +534,17 @@ const styles = StyleSheet.create({
 
   // Type
   typeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingVertical: 4 },
-  typeChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F0F0EC', gap: 6 },
+  typeChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F2F3F5', gap: 6 },
   typeDot: { width: 8, height: 8, borderRadius: 4 },
   typeText: { fontSize: 13, fontWeight: '500', color: '#2C2C2E' },
   typeTextSel: { color: '#fff' },
+
+  // Recurrence
+  recurrenceRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingVertical: 4 },
+  recurrenceChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F2F3F5' },
+  recurrenceChipSel: { backgroundColor: '#2C2C2E' },
+  recurrenceChipText: { fontSize: 13, fontWeight: '500', color: '#2C2C2E' },
+  recurrenceChipTextSel: { color: '#FAFAF8' },
 
   // Save / Delete
   saveBtn: { backgroundColor: '#2C2C2E', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 20, marginBottom: 8 },

@@ -40,6 +40,13 @@
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Start FAMILJ (Expo)",
+			"type": "shell",
+			"command": "npx expo start --clear",
+			"isBackground": true,
+			"group": "build"
 		}
 	]
 }

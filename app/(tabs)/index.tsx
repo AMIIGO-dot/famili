@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { format, getISOWeek } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import {
   getWeekRangeByOffset,
   formatTime,
@@ -104,21 +105,33 @@ export default function WeeklyViewScreen() {
   })();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.container}>
       {/* ── Header ── */}
       <View style={styles.header}>
-        <Pressable style={styles.navBtn} onPress={() => setWeekOffset((w) => w - 1)} hitSlop={12}>
-          <Text style={styles.navArrow}>‹</Text>
-        </Pressable>
-        <View style={styles.headerCenter}>
-          <Text style={styles.weekLabel}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>
             {t('weeklyView.weekNumber', { number: weekNumber })}
           </Text>
-          <Text style={styles.dateRange}>{rangeLabel}</Text>
+          <Text style={styles.headerSubtitle}>{rangeLabel}</Text>
         </View>
-        <Pressable style={styles.navBtn} onPress={() => setWeekOffset((w) => w + 1)} hitSlop={12}>
-          <Text style={styles.navArrow}>›</Text>
-        </Pressable>
+        <View style={styles.headerNav}>
+          <Pressable
+            style={styles.navBtn}
+            onPress={() => setWeekOffset((w) => w - 1)}
+            hitSlop={10}
+          >
+            <Ionicons name="chevron-back" size={20} color="#2C2C2E" />
+          </Pressable>
+          <View style={styles.navDivider} />
+          <Pressable
+            style={styles.navBtn}
+            onPress={() => setWeekOffset((w) => w + 1)}
+            hitSlop={10}
+          >
+            <Ionicons name="chevron-forward" size={20} color="#2C2C2E" />
+          </Pressable>
+        </View>
       </View>
 
       {/* ── Member filter bar ── */}
@@ -162,21 +175,34 @@ export default function WeeklyViewScreen() {
       </ScrollView>
 
       {/* ── Day list ── */}
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {days.map((day, idx) => {
-          const dayEvents = getEventsForDay(day);
-          const today_ = isToday(day);
-          const dayName = new Intl.DateTimeFormat(i18n.language, { weekday: 'short' })
-            .format(day)
-            .toUpperCase();
-          return (
-            <TouchableOpacity
-              key={idx}
-              activeOpacity={1}
-              delayLongPress={350}
-              onLongPress={() => { setPressedDate(day); setPressedEvent(undefined); setSheetVisible(true); }}
-              style={[styles.dayRow, today_ && styles.dayRowToday]}
-            >
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.weekCard}>
+          {days.map((day, idx) => {
+            const dayEvents = getEventsForDay(day);
+            const today_ = isToday(day);
+            const isFirst = idx === 0;
+            const isLast  = idx === days.length - 1;
+            const dayName = new Intl.DateTimeFormat(i18n.language, { weekday: 'short' })
+              .format(day)
+              .toUpperCase();
+            return (
+              <TouchableOpacity
+                key={idx}
+                activeOpacity={1}
+                delayLongPress={350}
+                onLongPress={() => { setPressedDate(day); setPressedEvent(undefined); setSheetVisible(true); }}
+                style={[
+                  styles.dayRow,
+                  today_ && styles.dayRowToday,
+                  isFirst && styles.dayRowFirst,
+                  isLast  && styles.dayRowLast,
+                  !isLast && styles.dayRowBorder,
+                ]}
+              >
               {/* Left: day label */}
               <View style={styles.dayHeader}>
                 <Text style={[styles.dayName, today_ && styles.dayNameToday]}>{dayName}</Text>
@@ -223,11 +249,12 @@ export default function WeeklyViewScreen() {
                   })
                 )}
               </View>
-            </TouchableOpacity>
-          );
-        })}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
         {/* bottom padding so FAB doesn't cover last event */}
-        <View style={{ height: 88 }} />
+        <View style={{ height: 140 }} />
       </ScrollView>
 
       {/* ── FAB ── */}
@@ -242,31 +269,64 @@ export default function WeeklyViewScreen() {
         lockedDate={pressedDate}
         editEvent={pressedEvent}
       />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF8' },
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#F2F3F5' },
 
   // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 14,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEB',
+    borderBottomColor: '#E5E5EA',
   },
-  navBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  navArrow: { fontSize: 26, color: '#2C2C2E' },
-  headerCenter: { alignItems: 'center' },
+  headerLeft: { flex: 1 },
+  headerBrand: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#AEAEB2',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#2C2C2E',
+    letterSpacing: -0.3,
+    lineHeight: 30,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#9999A6',
+    fontWeight: '500',
+    marginTop: 2,
+    textTransform: 'capitalize',
+  },
+  headerNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F3F5',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  navBtn: { paddingHorizontal: 14, paddingVertical: 10 },
+  navDivider: { width: 1, height: 20, backgroundColor: '#E0E0E5' },
   weekLabel: { fontSize: 15, fontWeight: '700', color: '#2C2C2E', letterSpacing: 0.2 },
   dateRange: { fontSize: 12, color: '#9999A6', marginTop: 1 },
 
   // Member filter bar
-  filterBar: { flexGrow: 0, borderBottomWidth: 1, borderBottomColor: '#EBEBEB' },
+  filterBar: { flexGrow: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
   filterContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' },
   filterChip: {
     flexDirection: 'row',
@@ -274,7 +334,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#F0F0EC',
+    backgroundColor: '#F2F3F5',
     borderWidth: 1.5,
     borderColor: 'transparent',
     gap: 6,
@@ -293,14 +353,37 @@ const styles = StyleSheet.create({
 
   // Day rows
   scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 14, paddingTop: 14 },
+  weekCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
+  },
   dayRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0EC',
     minHeight: 60,
     paddingVertical: 10,
+    paddingHorizontal: 4,
+    backgroundColor: '#FFFFFF',
   },
-  dayRowToday: { backgroundColor: '#F7F7FF' },
+  dayRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F1F4',
+  },
+  dayRowFirst: {
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+  },
+  dayRowLast: {
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+  },
+  dayRowToday: { backgroundColor: '#EDF3FF' },
   dayHeader: { width: 62, alignItems: 'center', paddingTop: 2 },
   dayName: { fontSize: 10, fontWeight: '700', color: '#AAAAAF', textTransform: 'uppercase', letterSpacing: 0.6 },
   dayNameToday: { color: '#5B9CF6' },
@@ -315,14 +398,14 @@ const styles = StyleSheet.create({
   // Event cards
   eventCard: {
     flexDirection: 'row',
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: '#fff',
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
   },
   eventAccent: { width: 4, borderRadius: 0 },
   eventBody: { flex: 1, paddingHorizontal: 10, paddingVertical: 7 },
@@ -342,7 +425,7 @@ const styles = StyleSheet.create({
   // FAB
   fab: {
     position: 'absolute',
-    bottom: 28,
+    bottom: 130,
     right: 24,
     width: 56,
     height: 56,

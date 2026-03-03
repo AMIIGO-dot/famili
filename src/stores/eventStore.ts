@@ -28,6 +28,7 @@ export interface EventOccurrence {
   memberIds: string[];
   color?: string;
   isRecurring: boolean;
+  recurrenceRule?: Event['recurrence_rule'];
 }
 
 interface EventsState {
@@ -48,15 +49,22 @@ export const useEventsStore = create<EventsState>((set, get) => ({
 
   fetchEventsForWeek: async (familyId, rangeStart, rangeEnd) => {
     if (DEV_BYPASS) {
-      // Seed some fake events so the calendar has something to render
-      const base = new Date(rangeStart);
-      base.setHours(9, 0, 0, 0);
-      const tomorrow = new Date(base);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(15, 0, 0, 0);
+      const existing = get().events;
 
-      set({
-        events: [
+      // Only seed placeholder events on first load (they don't exist yet).
+      // User-created events are always preserved so recurring events survive
+      // week navigation.
+      const SEED_IDS = ['dev-event-1', 'dev-event-2'];
+      const alreadySeeded = existing.some((e) => SEED_IDS.includes(e.id));
+
+      if (!alreadySeeded) {
+        const base = new Date(rangeStart);
+        base.setHours(9, 0, 0, 0);
+        const tomorrow = new Date(base);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(15, 0, 0, 0);
+
+        const seeds = [
           {
             id: 'dev-event-1',
             family_id: 'dev-family-id',
@@ -81,9 +89,12 @@ export const useEventsStore = create<EventsState>((set, get) => ({
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
-        ] as unknown as Event[],
-        isLoading: false,
-      });
+        ] as unknown as Event[];
+
+        set({ events: [...existing, ...seeds], isLoading: false });
+      }
+
+      set({ isLoading: false });
       return;
     }
 
@@ -139,6 +150,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
             type: event.type,
             memberIds: event.member_ids ?? [],
             isRecurring: false,
+            recurrenceRule: null,
           });
         }
       } else {
@@ -160,6 +172,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
             type: event.type,
             memberIds: event.member_ids ?? [],
             isRecurring: true,
+            recurrenceRule: event.recurrence_rule,
           });
         }
       }

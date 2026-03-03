@@ -41,6 +41,16 @@
     "getStarted": "Kör igång!",
     "next": "Nästa"
   },
+  "today": {
+    "title": "Min dag",
+    "greetingMorning": "God morgon",
+    "greetingDay": "God dag",
+    "greetingAfternoon": "God eftermiddag",
+    "greetingEvening": "God kväll",
+    "noEvents": "Lugnt idag",
+    "noEventsHint": "Tryck + för att lägga till en aktivitet.",
+    "ongoing": "Pågår nu"
+  },
   "weeklyView": {
     "title": "Den här veckan",
     "today": "Idag",

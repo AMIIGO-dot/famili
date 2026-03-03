@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+@import 'uniwind';
+@import 'heroui-native/styles';
+
+/* Path to heroui-native lib inside node_modules relative to this global.css (project root) */
+@source './node_modules/heroui-native/lib';

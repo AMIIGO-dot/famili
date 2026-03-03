@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../src/i18n';
@@ -37,8 +38,16 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.screenTitle}>{t('settings.title')}</Text>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.container}>
+      <View style={styles.headerSurface}>
+        <View style={styles.headerRow}>
+          <Text style={styles.screenTitle}>{t('settings.title')}</Text>
+          <View style={styles.headerIcon}>
+            <Ionicons name="settings" size={20} color="#2C2C2E" />
+          </View>
+        </View>
+      </View>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* Language */}
@@ -110,27 +119,56 @@ export default function SettingsScreen() {
           <Text style={styles.signOutText}>{t('auth.signOut')}</Text>
         </TouchableOpacity>
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF8',
+    backgroundColor: '#F2F3F5',
+  },
+  headerSurface: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 14,
+  },
+  headerBrand: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#AEAEB2',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F2F3F5',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   screenTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
     color: '#2C2C2E',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-    letterSpacing: 0.2,
+    letterSpacing: -0.3,
   },
   scroll: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingTop: 16,
   },
   section: {
     marginBottom: 28,
@@ -144,7 +182,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   option: {
-    backgroundColor: '#F0F0EC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -152,6 +190,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   optionActive: {
     backgroundColor: '#2C2C2E',
@@ -172,10 +215,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#F0F0EC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   detectedLabel: {
     fontSize: 11,

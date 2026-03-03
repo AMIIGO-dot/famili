@@ -41,6 +41,16 @@
     "getStarted": "Los geht's!",
     "next": "Weiter"
   },
+  "today": {
+    "title": "Mein Tag",
+    "greetingMorning": "Guten Morgen",
+    "greetingDay": "Guten Tag",
+    "greetingAfternoon": "Guten Nachmittag",
+    "greetingEvening": "Guten Abend",
+    "noEvents": "Heute nichts geplant",
+    "noEventsHint": "Tippe auf +, um eine Aktivität hinzuzufügen.",
+    "ongoing": "Jetzt"
+  },
   "weeklyView": {
     "title": "Diese Woche",
     "today": "Heute",
