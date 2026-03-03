@@ -33,6 +33,7 @@ interface FamilyState {
   fetchMembers: () => Promise<void>;
   fetchSubscription: (userId: string) => Promise<void>;
   resolveCurrentMember: (userId: string) => void;
+  checkPendingInvite: (email: string, userId: string) => Promise<void>;
   addMember: (member: Database['public']['Tables']['members']['Insert']) => Promise<Member | null>;
   updateMember: (id: string, updates: Database['public']['Tables']['members']['Update']) => Promise<void>;
   deleteMember: (id: string) => Promise<void>;
@@ -113,6 +114,28 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       currentMember: linked,
       currentMemberRole: linked?.role ?? 'parent',
     });
+  },
+
+  checkPendingInvite: async (email: string, userId: string) => {
+    const { claimPendingInvite } = await import('../lib/familyInviteService');
+    const result = await claimPendingInvite(email, userId);
+    if (!result) return;
+
+    // We've been accepted into a family — fetch it
+    try {
+      const { data: familyData, error: famErr } = await supabase
+        .from('families')
+        .select('*')
+        .eq('id', result.familyId)
+        .single();
+      if (famErr || !familyData) return;
+
+      set({ family: familyData });
+      await get().fetchMembers();
+      get().resolveCurrentMember(userId);
+    } catch (err) {
+      console.error('[FamilyStore] checkPendingInvite join error:', err);
+    }
   },
 
   fetchSubscription: async (userId: string) => {

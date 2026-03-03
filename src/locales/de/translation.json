@@ -117,6 +117,16 @@
   "family": {
     "confirmDelete": "{{name}} aus der Familie entfernen?"
   },
+  "parentInvite": {
+    "button": "Co-Elternteil per E-Mail einladen",
+    "title": "Co-Elternteil einladen",
+    "hint": "Gib ihre E-Mail-Adresse ein. Sie treten deinem Familienkalender bei, sobald sie sich anmelden.",
+    "emailLabel": "E-Mail-Adresse",
+    "emailPlaceholder": "partner@email.com",
+    "send": "Einladung senden",
+    "sentTitle": "Einladung gesendet!",
+    "sentSub": "Eine Einladung wartet auf {{email}}. Sie treten bei, sobald sie sich anmelden."
+  },
   "childJoin": {
     "heading": "Deiner Familie beitreten",
     "sub": "Gib den Code ein, den du von einem Elternteil erhalten hast",

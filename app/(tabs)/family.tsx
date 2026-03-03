@@ -19,7 +19,9 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheet, Button, TextField, Input, Label } from 'heroui-native';
 import { useFamilyStore } from '../../src/stores/familyStore';
+import { useAuthStore } from '../../src/stores/authStore';
 import InviteSheet from '../../src/components/InviteSheet';
+import { sendParentInvite } from '../../src/lib/familyInviteService';
 
 const COLORS = [
   '#5B9CF6', '#F97B8B', '#68D9A4', '#F5A623',
@@ -33,12 +35,32 @@ type DraftMember = { id?: string; name: string; color: string; role: 'parent' | 
 export default function FamilyScreen() {
   const { t } = useTranslation();
   const { family, members, addMember, updateMember, deleteMember, currentMemberRole } = useFamilyStore();
+  const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<DraftMember | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteMember, setInviteMember] = useState<typeof members[0] | null>(null);
+
+  // Co-parent email invite
+  const [parentInviteOpen, setParentInviteOpen] = useState(false);
+  const [parentInviteEmail, setParentInviteEmail] = useState('');
+  const [parentInviteSending, setParentInviteSending] = useState(false);
+  const [parentInviteSent, setParentInviteSent] = useState(false);
+
+  const handleSendParentInvite = async () => {
+    if (!parentInviteEmail.trim() || !family || !user) return;
+    setParentInviteSending(true);
+    try {
+      await sendParentInvite(parentInviteEmail.trim().toLowerCase(), family.id, user.id);
+      setParentInviteSent(true);
+    } catch (e: any) {
+      Alert.alert(t('common.error'), e?.message ?? t('common.error'));
+    } finally {
+      setParentInviteSending(false);
+    }
+  };
 
   const openAdd = () => {
     setEditing({ name: '', color: COLORS[members.length % COLORS.length], role: 'parent' });
@@ -194,6 +216,18 @@ export default function FamilyScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Invite co-parent — parents only */}
+        {currentMemberRole === 'parent' && (
+          <TouchableOpacity
+            style={[styles.addBtn, styles.coParentBtn]}
+            onPress={() => { setParentInviteEmail(''); setParentInviteSent(false); setParentInviteOpen(true); }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="mail-outline" size={14} color="#5B9CF6" style={{ marginRight: 6 }} />
+            <Text style={[styles.addBtnText, { color: '#5B9CF6' }]}>{t('parentInvite.button')}</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={{ height: 130 }} />
       </ScrollView>
 
@@ -282,15 +316,90 @@ export default function FamilyScreen() {
         </BottomSheet.Portal>
       </BottomSheet>
 
-      {/* Invite sheet — show QR + code for child member */}
-      {inviteMember && family && (
-        <InviteSheet
-          open={inviteOpen}
-          member={inviteMember as any}
-          familyId={family.id}
-          onClose={() => { setInviteOpen(false); setInviteMember(null); }}
-        />
-      )}
+      {/* Co-parent email invite BottomSheet */}
+      <BottomSheet
+        isOpen={parentInviteOpen}
+        onOpenChange={(v) => { if (!v) setParentInviteOpen(false); }}
+        snapPoints={['45%']}
+      >
+        <BottomSheet.Portal>
+          <BottomSheet.Overlay />
+          <BottomSheet.Content
+            detached
+            bottomInset={insets.bottom + 16}
+            className="mx-4"
+            backgroundClassName="rounded-[28px]"
+            enablePanDownToClose
+          >
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+              <View style={styles.sheetInner}>
+                <View style={styles.sheetHeader}>
+                  <Text style={styles.sheetTitle}>{t('parentInvite.title')}</Text>
+                  <BottomSheet.Close />
+                </View>
+
+                {parentInviteSent ? (
+                  <View style={styles.sentWrap}>
+                    <Ionicons name="checkmark-circle" size={48} color="#68D9A4" />
+                    <Text style={styles.sentTitle}>{t('parentInvite.sentTitle')}</Text>
+                    <Text style={styles.sentSub}>
+                      {t('parentInvite.sentSub', { email: parentInviteEmail })}
+                    </Text>
+                    <Button
+                      variant="secondary"
+                      style={{ marginTop: 20 }}
+                      onPress={() => setParentInviteOpen(false)}
+                    >
+                      {t('common.done')}
+                    </Button>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.inviteHint}>{t('parentInvite.hint')}</Text>
+                    <TextField style={styles.fieldWrap}>
+                      <Label>{t('parentInvite.emailLabel')}</Label>
+                      <Input
+                        placeholder={t('parentInvite.emailPlaceholder')}
+                        value={parentInviteEmail}
+                        onChangeText={setParentInviteEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoFocus
+                      />
+                    </TextField>
+                    <View style={styles.sheetBtns}>
+                      <Button
+                        variant="secondary"
+                        style={styles.btnFlex}
+                        onPress={() => setParentInviteOpen(false)}
+                      >
+                        {t('common.cancel')}
+                      </Button>
+                      <Button
+                        variant="primary"
+                        style={styles.btnFlex}
+                        isDisabled={!parentInviteEmail.trim() || parentInviteSending}
+                        onPress={handleSendParentInvite}
+                      >
+                        {parentInviteSending ? t('common.loading') : t('parentInvite.send')}
+                      </Button>
+                    </View>
+                  </>
+                )}
+              </View>
+            </KeyboardAvoidingView>
+          </BottomSheet.Content>
+        </BottomSheet.Portal>
+      </BottomSheet>
+
+      {/* Child invite sheet — always mounted so BottomSheet Portal is stable */}
+      <InviteSheet
+        open={inviteOpen}
+        member={inviteMember as any}
+        familyId={family?.id ?? ''}
+        onClose={() => { setInviteOpen(false); setInviteMember(null); }}
+      />
       </View>
     </SafeAreaView>
   );
@@ -454,5 +563,16 @@ const styles = StyleSheet.create({
   colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginBottom: 24 },
   colorSwatch: { width: 32, height: 32, borderRadius: 16 },
   colorSwatchSel: { borderWidth: 3, borderColor: '#2C2C2E' },
+  coParentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    borderColor: '#5B9CF6',
+  },
+  sentWrap: { alignItems: 'center', paddingVertical: 16, gap: 8 },
+  sentTitle: { fontSize: 18, fontWeight: '700', color: '#2C2C2E', marginTop: 8 },
+  sentSub: { fontSize: 14, color: '#9999A6', textAlign: 'center', lineHeight: 20 },
+  inviteHint: { fontSize: 13, color: '#9999A6', marginBottom: 16, lineHeight: 18 },
 
 });

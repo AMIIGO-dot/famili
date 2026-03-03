@@ -116,7 +116,17 @@
   },
   "family": {
     "confirmDelete": "Ta bort {{name}} ur familjen?"
-  },  "childJoin": {
+  },  "parentInvite": {
+    "button": "Bjud in medf\u00f6r\u00e4lder via e-post",
+    "title": "Bjud in medf\u00f6r\u00e4lder",
+    "hint": "Ange deras e-postadress. De g\u00e5r med i din familjekalender n\u00e4r de loggar in.",
+    "emailLabel": "E-postadress",
+    "emailPlaceholder": "partner@email.com",
+    "send": "Skicka inbjudan",
+    "sentTitle": "Inbjudan skickad!",
+    "sentSub": "En inbjudan v\u00e4ntar p\u00e5 {{email}}. De g\u00e5r med s\u00e5 snart de loggar in."
+  },
+  "childJoin": {
     "heading": "G\u00e5 med i din familj",
     "sub": "Ange koden du fick fr\u00e5n en f\u00f6r\u00e4lder",
     "tabCode": "Ange kod",

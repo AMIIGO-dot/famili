@@ -152,6 +152,31 @@ export type Database = {
         };
         Relationships: [];
       };
+      family_invites: {
+        Row: {
+          id: string;
+          family_id: string;
+          email: string;          // invited co-parent's email (lowercase)
+          invited_by: string;     // user_id of inviting parent
+          accepted_at: string | null;
+          accepted_by: string | null; // user_id of newly-joined parent
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          family_id: string;
+          email: string;
+          invited_by: string;
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+        };
+        Relationships: [];
+      };
       invite_codes: {
         Row: {
           id: string;

@@ -117,6 +117,16 @@
   "family": {
     "confirmDelete": "Remove {{name}} from the family?"
   },
+  "parentInvite": {
+    "button": "Invite co-parent by email",
+    "title": "Invite co-parent",
+    "hint": "Enter their email. They\u2019ll join your family calendar when they sign in.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "partner@email.com",
+    "send": "Send invite",
+    "sentTitle": "Invite sent!",
+    "sentSub": "An invite is waiting for {{email}}. They\u2019ll join as soon as they sign in."
+  },
   "childJoin": {
     "heading": "Join your family",
     "sub": "Enter the code you got from a parent",

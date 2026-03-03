@@ -38,14 +38,16 @@ export default function InviteSheet({ open, member, familyId, onClose }: Props) 
   const [error, setError] = useState<string | null>(null);
 
   const generate = async () => {
-    if (!member || !user) return;
+    if (!member) return;
     setLoading(true);
     setError(null);
     try {
-      const newCode = await createInviteCode(member.id, familyId, user.id);
+      const callerId = user?.id ?? 'dev-user-id';
+      const newCode = await createInviteCode(member.id, familyId, callerId);
       setCode(newCode);
       setExpiresAt(new Date(Date.now() + EXPIRY_HOURS * 60 * 60 * 1000));
     } catch (e: any) {
+      console.error('[InviteSheet] generate error:', e);
       setError(e?.message ?? 'Error');
     } finally {
       setLoading(false);
@@ -66,7 +68,7 @@ export default function InviteSheet({ open, member, familyId, onClose }: Props) 
     : '--- ---';
 
   return (
-    <BottomSheet isOpen={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+    <BottomSheet isOpen={open} onOpenChange={(v) => { if (!v) onClose(); }} snapPoints={['65%']}>
       <BottomSheet.Portal>
         <BottomSheet.Overlay />
         <BottomSheet.Content
@@ -75,7 +77,6 @@ export default function InviteSheet({ open, member, familyId, onClose }: Props) 
           className="mx-4"
           backgroundClassName="rounded-[28px]"
           enablePanDownToClose
-          snapPoints={['65%']}
         >
           <View style={styles.inner}>
             {/* Header */}
@@ -86,7 +87,7 @@ export default function InviteSheet({ open, member, familyId, onClose }: Props) 
               <BottomSheet.Close />
             </View>
 
-            <Text style={styles.subtitle}>{t('invite.subtitle')}</Text>
+            <Text style={styles.subtitle}>{t('invite.subtitle', { name: member?.name ?? '' })}</Text>
 
             {loading ? (
               <View style={styles.center}>

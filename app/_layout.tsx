@@ -22,7 +22,7 @@ import { supabase } from '../src/lib/supabase';
 export default function RootLayout() {
   const { initialize, session, isInitialized, profile, user } = useAuthStore();
   const { loadFromProfile } = useSettingsStore();
-  const { fetchFamily, family, isLoading: familyLoading, currentMemberRole } = useFamilyStore();
+  const { fetchFamily, family, isLoading: familyLoading, currentMemberRole, checkPendingInvite } = useFamilyStore();
   const { pinVerified: childPinVerified } = useChildAuthStore();
   const router = useRouter();
   const segments = useSegments();
@@ -31,9 +31,15 @@ export default function RootLayout() {
     initialize();
   }, []);
 
-  // Fetch family once user is known
+  // Fetch family once user is known; if none found, check for a co-parent email invite
   useEffect(() => {
-    if (user) fetchFamily(user.id);
+    if (!user) return;
+    fetchFamily(user.id).then(() => {
+      const { family: loaded } = useFamilyStore.getState();
+      if (!loaded && user.email) {
+        checkPendingInvite(user.email, user.id);
+      }
+    });
   }, [user]);
 
   // Handle magic link deep link callback
