@@ -100,6 +100,9 @@
   },
   "settings": {
     "title": "Settings",
+    "segPrefs": "Preferences",
+    "segAccount": "Account",
+    "segAbout": "About",
     "language": "Language",
     "timezone": "Time Zone",
     "weekStart": "Week starts on",
@@ -112,7 +115,18 @@
     "account": "Account",
     "detectedTimezone": "Detected automatically",
     "members": "Family Members",
-    "familyName": "Family Name"
+    "familyName": "Family Name",
+    "signOutConfirm": "Are you sure you want to sign out?",
+    "legal": "Legal",
+    "termsOfUse": "Terms of Use",
+    "privacyPolicy": "Privacy Policy",
+    "support": "Support",
+    "contactSupport": "Contact Support",
+    "rateApp": "Rate FAMILJ",
+    "acknowledgements": "Acknowledgements",
+    "openSource": "Open Source Libraries",
+    "openSourceSub": "Expo, Supabase, Zustand, and more",
+    "copyright": "\u00a9 2026 FAMILJ. All rights reserved."
   },
   "family": {
     "confirmDelete": "Remove {{name}} from the family?"

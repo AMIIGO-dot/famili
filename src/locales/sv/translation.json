@@ -100,6 +100,9 @@
   },
   "settings": {
     "title": "Inställningar",
+    "segPrefs": "Preferenser",
+    "segAccount": "Konto",
+    "segAbout": "Om",
     "language": "Språk",
     "timezone": "Tidszon",
     "weekStart": "Veckan börjar",
@@ -112,7 +115,18 @@
     "account": "Konto",
     "detectedTimezone": "Identifieras automatiskt",
     "members": "Familjemedlemmar",
-    "familyName": "Familjenamn"
+    "familyName": "Familjenamn",
+    "signOutConfirm": "Är du säker på att du vill logga ut?",
+    "legal": "Juridiskt",
+    "termsOfUse": "Användarvillkor",
+    "privacyPolicy": "Integritetspolicy",
+    "support": "Support",
+    "contactSupport": "Kontakta support",
+    "rateApp": "Betygsätt FAMILJ",
+    "acknowledgements": "Tack till",
+    "openSource": "Öppna källbibliotek",
+    "openSourceSub": "Expo, Supabase, Zustand och mer",
+    "copyright": "© 2026 FAMILJ. Alla rättigheter förbehållna."
   },
   "family": {
     "confirmDelete": "Ta bort {{name}} ur familjen?"
