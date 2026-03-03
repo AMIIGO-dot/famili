@@ -188,6 +188,8 @@
       "advancedRecurrence": "Avancerade upprepningsregler",
       "pdfExport": "PDF-export"
     },
-    "restorePurchases": "Återställ köp"
+    "restorePurchases": "Återställ köp",
+    "manageSubscription": "Hantera prenumeration",
+    "manageSubscriptionSub": "Återbetalningar, avslut & historik"
   }
 }

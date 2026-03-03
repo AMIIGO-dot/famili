@@ -192,6 +192,8 @@
       "advancedRecurrence": "Advanced recurring rules",
       "pdfExport": "PDF export"
     },
-    "restorePurchases": "Restore Purchases"
+    "restorePurchases": "Restore Purchases",
+    "manageSubscription": "Manage Subscription",
+    "manageSubscriptionSub": "Refunds, cancellations & history"
   }
 }

@@ -1,26 +1,32 @@
 /**
  * FAMILJ – Paywall Screen
  *
- * Shows available subscription plans fetched from RevenueCat offerings.
- * Falls back to a static UI when RevenueCat is not configured (dev/CI).
+ * Uses the RevenueCat native Paywall UI (RevenueCatUI.Paywall).
+ * The paywall design and copy are configured in the RevenueCat dashboard.
+ *
+ * Falls back to a feature-list screen when RevenueCat is not yet configured
+ * (e.g. running in Expo Go or CI without native modules).
  */
 
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import type { PurchasesPackage } from 'react-native-purchases';
+import type {
+  CustomerInfo,
+  PurchasesStoreTransaction,
+  PurchasesError,
+} from 'react-native-purchases';
+import RevenueCatUI from 'react-native-purchases-ui';
 import { usePurchaseStore } from '../src/stores/purchaseStore';
 import { isPurchasesConfigured } from '../src/lib/purchases';
 
@@ -42,106 +48,20 @@ const FEATURE_ICONS: Record<string, string> = {
   pdfExport: 'document-outline',
 };
 
-function PackageButton({
-  pkg,
-  onPress,
-  isLoading,
-}: {
-  pkg: PurchasesPackage;
-  onPress: () => void;
-  isLoading: boolean;
-}) {
+// ─── Fallback shown when SDK is not configured (Dev / CI) ─────────────────────
+
+function DevFallback({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
-  const isAnnual = pkg.packageType === 'ANNUAL';
-  return (
-    <TouchableOpacity
-      style={[styles.packageBtn, isAnnual && styles.packageBtnHighlight]}
-      onPress={onPress}
-      disabled={isLoading}
-      activeOpacity={0.8}
-    >
-      {isAnnual && (
-        <View style={styles.bestValueBadge}>
-          <Text style={styles.bestValueText}>BEST VALUE</Text>
-        </View>
-      )}
-      <Text style={[styles.packageTitle, isAnnual && styles.packageTitleHighlight]}>
-        {pkg.product.title}
-      </Text>
-      <Text style={[styles.packagePrice, isAnnual && styles.packagePriceHighlight]}>
-        {pkg.product.priceString}
-      </Text>
-      {isAnnual && pkg.product.introPrice && (
-        <Text style={styles.trialLabel}>
-          {pkg.product.introPrice.periodNumberOfUnits}-
-          {pkg.product.introPrice.periodUnit.toLowerCase()} free trial
-        </Text>
-      )}
-    </TouchableOpacity>
-  );
-}
-
-export default function PaywallScreen() {
-  const { t } = useTranslation();
-  const router = useRouter();
-  const { offerings, isLoading, fetchOfferings, purchasePackage, restorePurchases, isPremium } =
-    usePurchaseStore();
-
-  useEffect(() => {
-    if (isPurchasesConfigured) {
-      fetchOfferings();
-    }
-  }, []);
-
-  // Dismiss if user is already premium (e.g. after restore)
-  useEffect(() => {
-    if (isPremium) {
-      Alert.alert(
-        t('subscription.premium'),
-        '✓ Your premium access is active!',
-        [{ text: t('common.done'), onPress: () => router.back() }]
-      );
-    }
-  }, [isPremium]);
-
-  const handlePurchase = async (pkg: PurchasesPackage) => {
-    const success = await purchasePackage(pkg);
-    if (success) {
-      Alert.alert(
-        t('subscription.premium'),
-        '🎉 Welcome to FAMILJ Premium!',
-        [{ text: t('common.done'), onPress: () => router.back() }]
-      );
-    }
-  };
-
-  const handleRestore = async () => {
-    const restored = await restorePurchases();
-    if (restored) {
-      Alert.alert(t('subscription.premium'), '✓ Purchase restored!');
-    } else {
-      Alert.alert(t('common.error'), 'No active subscription found.');
-    }
-  };
-
-  const packages = offerings?.current?.availablePackages ?? [];
-
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+        <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
           <Ionicons name="close" size={22} color="#1C1C1E" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('subscription.premium')}</Text>
         <View style={{ width: 36 }} />
       </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-      >
-        {/* Hero */}
+      <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
         <View style={styles.hero}>
           <View style={styles.heroIcon}>
             <Ionicons name="star" size={32} color="#F5A623" />
@@ -151,17 +71,11 @@ export default function PaywallScreen() {
             Everything your family needs, without limits.
           </Text>
         </View>
-
-        {/* Features */}
         <View style={styles.featuresCard}>
           {FEATURE_KEYS.map((key) => (
             <View key={key} style={styles.featureRow}>
               <View style={styles.featureIconWrap}>
-                <Ionicons
-                  name={FEATURE_ICONS[key] as any}
-                  size={18}
-                  color="#5B9CF6"
-                />
+                <Ionicons name={FEATURE_ICONS[key] as any} size={18} color="#5B9CF6" />
               </View>
               <Text style={styles.featureLabel}>
                 {t(`subscription.features.${key}`)}
@@ -170,44 +84,74 @@ export default function PaywallScreen() {
             </View>
           ))}
         </View>
-
-        {/* Packages */}
-        {isLoading ? (
-          <ActivityIndicator color="#5B9CF6" style={{ marginVertical: 32 }} />
-        ) : packages.length > 0 ? (
-          <View style={styles.packages}>
-            {packages.map((pkg: PurchasesPackage) => (
-              <PackageButton
-                key={pkg.identifier}
-                pkg={pkg}
-                onPress={() => handlePurchase(pkg)}
-                isLoading={isLoading}
-              />
-            ))}
-          </View>
-        ) : (
-          /* Fallback when RevenueCat not configured */
-          <View style={styles.devNotice}>
-            <Ionicons name="information-circle-outline" size={20} color="#AEAEB2" />
-            <Text style={styles.devNoticeText}>
-              Configure EXPO_PUBLIC_RC_IOS_KEY / EXPO_PUBLIC_RC_ANDROID_KEY to enable in-app purchases.
-            </Text>
-          </View>
-        )}
-
-        {/* Restore */}
-        <TouchableOpacity style={styles.restoreBtn} onPress={handleRestore}>
-          <Text style={styles.restoreText}>{t('subscription.restorePurchases')}</Text>
-        </TouchableOpacity>
-
-        {/* Legal */}
+        <View style={styles.devNotice}>
+          <Ionicons name="information-circle-outline" size={20} color="#AEAEB2" />
+          <Text style={styles.devNoticeText}>
+            Set EXPO_PUBLIC_RC_API_KEY in .env and run a development build to
+            enable in-app purchases.
+          </Text>
+        </View>
         <Text style={styles.legalText}>
           {Platform.OS === 'ios'
-            ? 'Payment will be charged to your Apple ID. Subscription renews automatically unless cancelled 24h before the end of the current period.'
-            : 'Payment will be charged to your Google Account. Subscription renews automatically unless cancelled before renewal date.'}
+            ? 'Payment charged to your Apple ID. Renews automatically unless cancelled.'
+            : 'Payment charged to your Google Account. Renews automatically unless cancelled.'}
         </Text>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+// ─── Main screen ───────────────────────────────────────────────────────────────
+
+export default function PaywallScreen() {
+  const router = useRouter();
+  const fetchCustomerInfo = usePurchaseStore((s) => s.fetchCustomerInfo);
+
+  const handleDismiss = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handlePurchaseCompleted = useCallback(
+    (_: { customerInfo: CustomerInfo; storeTransaction: PurchasesStoreTransaction }) => {
+      fetchCustomerInfo();
+      router.back();
+    },
+    [router, fetchCustomerInfo]
+  );
+
+  const handleRestoreCompleted = useCallback(
+    (_: { customerInfo: CustomerInfo }) => {
+      fetchCustomerInfo();
+      router.back();
+    },
+    [router, fetchCustomerInfo]
+  );
+
+  const handlePurchaseError = useCallback(
+    ({ error }: { error: PurchasesError }) => {
+      console.warn('[Paywall] purchase error:', error.message);
+    },
+    []
+  );
+
+  if (!isPurchasesConfigured) {
+    return <DevFallback onClose={handleDismiss} />;
+  }
+
+  return (
+    <View style={styles.safe}>
+      <RevenueCatUI.Paywall
+        options={{ displayCloseButton: true }}
+        onDismiss={handleDismiss}
+        onPurchaseCompleted={handlePurchaseCompleted}
+        onPurchaseCancelled={handleDismiss}
+        onRestoreCompleted={handleRestoreCompleted}
+        onPurchaseError={handlePurchaseError}
+        onRestoreError={({ error }) =>
+          console.warn('[Paywall] restore error:', error.message)
+        }
+      />
+    </View>
   );
 }
 
@@ -235,8 +179,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1C1C1E',
   },
-
-  scroll: { paddingBottom: 48 },
 
   hero: {
     alignItems: 'center',
@@ -294,59 +236,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  packages: {
-    paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 16,
-  },
-  packageBtn: {
-    borderRadius: 16,
-    padding: 18,
-    backgroundColor: '#F2F2F7',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  packageBtnHighlight: {
-    backgroundColor: '#EAF1FF',
-    borderColor: '#5B9CF6',
-  },
-  bestValueBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: '#5B9CF6',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  bestValueText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  packageTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1C1C1E',
-    marginBottom: 4,
-  },
-  packageTitleHighlight: { color: '#1C54A5' },
-  packagePrice: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1C1C1E',
-  },
-  packagePriceHighlight: { color: '#1C54A5' },
-  trialLabel: {
-    fontSize: 12,
-    color: '#34C759',
-    fontWeight: '600',
-    marginTop: 4,
-  },
-
   devNotice: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -364,22 +253,12 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  restoreBtn: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 8,
-  },
-  restoreText: {
-    fontSize: 14,
-    color: '#5B9CF6',
-    fontWeight: '500',
-  },
-
   legalText: {
     fontSize: 11,
     color: '#AEAEB2',
     textAlign: 'center',
     paddingHorizontal: 28,
     lineHeight: 16,
+    marginTop: 8,
   },
 });

@@ -190,6 +190,8 @@
       "advancedRecurrence": "Erweiterte Wiederholungsregeln",
       "pdfExport": "PDF-Export"
     },
-    "restorePurchases": "Käufe wiederherstellen"
+    "restorePurchases": "Käufe wiederherstellen",
+    "manageSubscription": "Abonnement verwalten",
+    "manageSubscriptionSub": "Erstattungen, Kündigungen & Verlauf"
   }
 }

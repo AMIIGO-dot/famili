@@ -15,17 +15,26 @@ import type {
   PurchasesPackage,
 } from 'react-native-purchases';
 import { Purchases, isPurchasesConfigured } from '../lib/purchases';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
-/** Entitlement identifier configured in the RevenueCat dashboard */
-const PREMIUM_ENTITLEMENT = 'premium';
+export { PAYWALL_RESULT };
+
+/**
+ * Entitlement identifier as configured in the RevenueCat dashboard.
+ * Dashboard → Entitlements → "pro" (display name: "Familu.app Pro")
+ */
+const PREMIUM_ENTITLEMENT = 'pro';
+
+/** Derive isPremium from a CustomerInfo object */
+function deriveIsPremium(ci: CustomerInfo | null): boolean {
+  return !!ci?.entitlements.active[PREMIUM_ENTITLEMENT];
+}
 
 interface PurchaseState {
   customerInfo: CustomerInfo | null;
   offerings: PurchasesOfferings | null;
   isLoading: boolean;
   error: string | null;
-
-  // Computed
   isPremium: boolean;
 
   // Actions
@@ -33,25 +42,22 @@ interface PurchaseState {
   fetchOfferings: () => Promise<void>;
   purchasePackage: (pkg: PurchasesPackage) => Promise<boolean>;
   restorePurchases: () => Promise<boolean>;
+  presentPaywall: (entitlementId?: string) => Promise<PAYWALL_RESULT>;
   reset: () => void;
 }
 
-export const usePurchaseStore = create<PurchaseState>((set, get) => ({
+export const usePurchaseStore = create<PurchaseState>((set) => ({
   customerInfo: null,
-  offerings: null as PurchasesOfferings | null,
+  offerings: null,
   isLoading: false,
   error: null,
-
-  get isPremium() {
-    const ci = get().customerInfo;
-    return !!ci?.entitlements.active[PREMIUM_ENTITLEMENT];
-  },
+  isPremium: false,
 
   fetchCustomerInfo: async () => {
     if (!isPurchasesConfigured) return;
     try {
       const info = await Purchases.getCustomerInfo();
-      set({ customerInfo: info, error: null });
+      set({ customerInfo: info, isPremium: deriveIsPremium(info), error: null });
     } catch (err: any) {
       console.warn('[PurchaseStore] fetchCustomerInfo error:', err);
       set({ error: err?.message ?? 'Failed to load subscription info' });
@@ -77,8 +83,9 @@ export const usePurchaseStore = create<PurchaseState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      set({ customerInfo, isLoading: false });
-      return !!customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+      const isPremium = deriveIsPremium(customerInfo);
+      set({ customerInfo, isPremium, isLoading: false });
+      return isPremium;
     } catch (err: any) {
       if (!err.userCancelled) {
         set({ error: err?.message ?? 'Purchase failed' });
@@ -93,8 +100,9 @@ export const usePurchaseStore = create<PurchaseState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const customerInfo = await Purchases.restorePurchases();
-      set({ customerInfo, isLoading: false });
-      return !!customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+      const isPremium = deriveIsPremium(customerInfo);
+      set({ customerInfo, isPremium, isLoading: false });
+      return isPremium;
     } catch (err: any) {
       set({ error: err?.message ?? 'Restore failed', isLoading: false });
       console.warn('[PurchaseStore] restorePurchases error:', err);
@@ -102,5 +110,26 @@ export const usePurchaseStore = create<PurchaseState>((set, get) => ({
     }
   },
 
-  reset: () => set({ customerInfo: null, offerings: null, error: null }),
+  /**
+   * Present the native RevenueCat paywall imperatively.
+   * Only shown if the user doesn't already have the entitlement.
+   */
+  presentPaywall: async (entitlementId = PREMIUM_ENTITLEMENT): Promise<PAYWALL_RESULT> => {
+    if (!isPurchasesConfigured) return PAYWALL_RESULT.NOT_PRESENTED;
+    try {
+      const result = await RevenueCatUI.presentPaywallIfNeeded({
+        requiredEntitlementIdentifier: entitlementId,
+        displayCloseButton: true,
+      });
+      // Refresh customer info after any paywall interaction
+      const info = await Purchases.getCustomerInfo();
+      set({ customerInfo: info, isPremium: deriveIsPremium(info) });
+      return result;
+    } catch (err) {
+      console.warn('[PurchaseStore] presentPaywall error:', err);
+      return PAYWALL_RESULT.ERROR;
+    }
+  },
+
+  reset: () => set({ customerInfo: null, offerings: null, isPremium: false, error: null }),
 }));

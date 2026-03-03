@@ -276,6 +276,13 @@ function AccountPanel() {
             plan: t(isPremium ? 'subscription.planMonthly' : 'subscription.planFree'),
           })}
           onPress={() => router.push('/paywall')}
+        />
+        <Row
+          icon="headset-outline"
+          iconColor="#5B9CF6"
+          label={t('subscription.manageSubscription')}
+          sublabel={t('subscription.manageSubscriptionSub')}
+          onPress={() => router.push('/customer-center')}
           last
         />
       </Card>

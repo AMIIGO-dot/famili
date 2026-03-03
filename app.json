@@ -36,13 +36,7 @@
       "expo-localization",
       "expo-font",
       "expo-notifications",
-      "expo-secure-store",
-      [
-        "react-native-purchases",
-        {
-          "addDebugView": false
-        }
-      ]
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

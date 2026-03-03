@@ -149,6 +149,8 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="customer-center" options={{ presentation: 'modal' }} />
         </Stack>
       </HeroUINativeProvider>
     </GestureHandlerRootView>
