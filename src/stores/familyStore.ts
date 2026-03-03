@@ -34,6 +34,7 @@ interface FamilyState {
   addMember: (member: Database['public']['Tables']['members']['Insert']) => Promise<Member | null>;
   updateMember: (id: string, updates: Database['public']['Tables']['members']['Update']) => Promise<void>;
   deleteMember: (id: string) => Promise<void>;
+  reset: () => void;
 }
 
 export const useFamilyStore = create<FamilyState>((set, get) => ({
@@ -43,6 +44,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   isLoading: false,
   currentMember: null,
   currentMemberRole: 'parent',
+
+  reset: () => set({ family: null, members: [], subscription: null, currentMember: null, currentMemberRole: 'parent', isLoading: false }),
 
   get isPremium() {
     const sub = get().subscription;
@@ -91,7 +94,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
           get().resolveCurrentMember(userId);
         }
       } else {
-        set({ family: null });
+        // No family found — hard clear all family data
+        set({ family: null, members: [], currentMember: null, currentMemberRole: 'parent' });
       }
     } catch (err) {
       console.error('[FamilyStore] fetchFamily error:', err);

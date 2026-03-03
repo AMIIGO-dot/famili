@@ -16,6 +16,7 @@ import '../src/i18n';
 import { useAuthStore } from '../src/stores/authStore';
 import { useSettingsStore } from '../src/stores/settingsStore';
 import { useFamilyStore } from '../src/stores/familyStore';
+import { useEventsStore } from '../src/stores/eventStore';
 import { useChildAuthStore } from '../src/stores/childAuthStore';
 import { usePurchaseStore } from '../src/stores/purchaseStore';
 import { initPurchases } from '../src/lib/purchases';
@@ -25,11 +26,19 @@ import { supabase } from '../src/lib/supabase';
 export default function RootLayout() {
   const { initialize, session, isInitialized, profile, user } = useAuthStore();
   const { loadFromProfile, initLanguage } = useSettingsStore();
-  const { fetchFamily, family, isLoading: familyLoading, currentMemberRole, checkPendingInvite } = useFamilyStore();
+  const { fetchFamily, family, isLoading: familyLoading, currentMemberRole, checkPendingInvite, reset: resetFamily } = useFamilyStore();
   const { pinVerified: childPinVerified } = useChildAuthStore();
   const { fetchCustomerInfo } = usePurchaseStore();
   const router = useRouter();
   const segments = useSegments();
+
+  // Clear all user-scoped stores immediately when session is lost
+  useEffect(() => {
+    if (!user) {
+      resetFamily();
+      useEventsStore.getState().reset();
+    }
+  }, [user]);
 
   // Restore persisted language first, then initialize auth
   useEffect(() => {

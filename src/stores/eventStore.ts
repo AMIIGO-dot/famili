@@ -41,12 +41,14 @@ interface EventsState {
   createEvent: (event: EventInsert) => Promise<Event | null>;
   updateEvent: (id: string, updates: EventUpdate) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
+  reset: () => void;
 }
 
 export const useEventsStore = create<EventsState>((set, get) => ({
   events: [],
   isLoading: false,
 
+  reset: () => set({ events: [], isLoading: false }),
   fetchEventsForWeek: async (familyId, rangeStart, rangeEnd) => {
     set({ isLoading: true });
     try {

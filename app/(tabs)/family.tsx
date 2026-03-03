@@ -303,7 +303,7 @@ export default function FamilyScreen() {
                   </Button>
                   <Button
                     variant="primary"
-                    style={styles.btnFlex}
+                    style={[styles.btnFlex, styles.btnGreen]}
                     isDisabled={!editing?.name.trim()}
                     onPress={handleSave}
                   >
@@ -371,7 +371,7 @@ export default function FamilyScreen() {
                     <View style={styles.sheetBtns}>
                       <Button
                         variant="primary"
-                        style={styles.btnFull}
+                        style={[styles.btnFull, styles.btnGreen]}
                         isDisabled={!parentInviteEmail.trim() || parentInviteSending}
                         onPress={handleSendParentInvite}
                       >
@@ -535,11 +535,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sheetBtns: {
-    flexDirection: 'column',
-    gap: 0,
+    flexDirection: 'row',
+    gap: 10,
     marginTop: 16,
   },
   btnFull: { width: '100%' },
+  btnGreen: { backgroundColor: '#44B57F' },
   btnFlex: { flex: 1 },
   cancelLink: { alignItems: 'center', paddingVertical: 12 },
   cancelLinkText: { fontSize: 13, color: '#9999A6' },
