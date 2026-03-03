@@ -24,8 +24,18 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { useFamilyStore } from '../src/stores/familyStore';
 import { useAuthStore } from '../src/stores/authStore';
+import { useSettingsStore } from '../src/stores/settingsStore';
+import i18n, { SUPPORTED_LANGUAGES, getBestLanguage } from '../src/i18n';
+import type { SupportedLanguage } from '../src/i18n';
+import * as Localization from 'expo-localization';
 
 const PRESET_COLORS = ['#5B9CF6', '#F97B8B', '#68D9A4', '#F5A623', '#B48AE6', '#FF8C42', '#4ECDC4'];
+
+const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
+  en: '🇬🇧  English',
+  sv: '🇸🇪  Svenska',
+  de: '🇩🇪  Deutsch',
+};
 
 interface DraftMember {
   name: string;
@@ -37,7 +47,14 @@ export default function OnboardingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { family, members, fetchFamily } = useFamilyStore();
+  const { fetchFamily } = useFamilyStore();
+  const { setLanguage } = useSettingsStore();
+
+  // Default to device language, fall back to 'en'
+  const deviceLang = getBestLanguage(
+    Localization.getLocales()[0]?.languageTag ?? 'en'
+  );
+  const [selectedLang, setSelectedLang] = useState<SupportedLanguage>(deviceLang);
 
   const [step, setStep] = useState<1 | 2>(1);
   const [familyName, setFamilyName] = useState('');
@@ -65,7 +82,7 @@ export default function OnboardingScreen() {
   const handleFinish = async () => {
     const validMembers = draftMembers.filter((m) => m.name.trim());
     if (!familyName.trim() || validMembers.length === 0) {
-      Alert.alert(t('common.error'), 'Please add a family name and at least one member.');
+      Alert.alert(t('common.error'), t('onboarding.step2Title'));
       return;
     }
 
@@ -73,15 +90,9 @@ export default function OnboardingScreen() {
     try {
       const { supabase } = await import('../src/lib/supabase');
 
-      // DEV_BYPASS check — if family is already seeded (has dev-family-id), just navigate
-      if (family?.id === 'dev-family-id') {
-        router.replace('/(tabs)');
-        return;
-      }
-
-      // Real path: create family + members in Supabase
       if (!user) throw new Error('Not logged in');
 
+      // 1. Create family
       const { data: newFamily, error: familyErr } = await supabase
         .from('families')
         .insert({ name: familyName.trim(), owner_id: user.id })
@@ -90,7 +101,8 @@ export default function OnboardingScreen() {
 
       if (familyErr) throw familyErr;
 
-      await supabase.from('members').insert(
+      // 2. Create members
+      const { error: membersErr } = await supabase.from('members').insert(
         validMembers.map((m) => ({
           family_id: newFamily.id,
           name: m.name.trim(),
@@ -99,9 +111,16 @@ export default function OnboardingScreen() {
         }))
       );
 
+      if (membersErr) throw membersErr;
+
+      // 3. Save chosen language to profile
+      await setLanguage(selectedLang, user.id);
+
+      // 4. Refresh family in store and navigate
       await fetchFamily(user.id);
       router.replace('/(tabs)');
     } catch (err: any) {
+      console.error('[Onboarding] handleFinish error:', err);
       Alert.alert(t('common.error'), err.message ?? t('common.error'));
     } finally {
       setSaving(false);
@@ -121,9 +140,29 @@ export default function OnboardingScreen() {
         </View>
 
         {step === 1 ? (
-          /* ── Step 1: Family name ── */
+          /* ── Step 1: Language + Family name ── */
           <View style={styles.stepContainer}>
             <Text style={styles.appName}>{t('common.appName')}</Text>
+
+            {/* Language picker */}
+            <Text style={styles.langLabel}>{t('onboarding.chooseLanguage')}</Text>
+            <View style={styles.langRow}>
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <TouchableOpacity
+                  key={lang}
+                  style={[styles.langChip, selectedLang === lang && styles.langChipActive]}
+                  onPress={() => {
+                    setSelectedLang(lang);
+                    i18n.changeLanguage(lang);
+                  }}
+                >
+                  <Text style={[styles.langChipText, selectedLang === lang && styles.langChipTextActive]}>
+                    {LANGUAGE_LABELS[lang]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <Text style={styles.stepTitle}>{t('onboarding.step1Title')}</Text>
             <TextInput
               style={styles.input}
@@ -264,7 +303,38 @@ const styles = StyleSheet.create({
     color: '#2C2C2E',
     letterSpacing: 3,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
+  },
+  langLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9999A6',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 10,
+  },
+  langRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 28,
+  },
+  langChip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#F0F0EC',
+    alignItems: 'center',
+  },
+  langChipActive: {
+    backgroundColor: '#2C2C2E',
+  },
+  langChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6E6E7A',
+  },
+  langChipTextActive: {
+    color: '#FAFAF8',
   },
   stepTitle: {
     fontSize: 22,

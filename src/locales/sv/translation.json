@@ -26,6 +26,7 @@
   "onboarding": {
     "welcome": "Välkommen till FAMILJ",
     "tagline": "Full koll på veckan. Utan stress.",
+    "chooseLanguage": "Välj språk",
     "step1Title": "Vad heter er familj?",
     "step2Title": "Vilka är i familjen?",
     "createFamily": "Skapa din familj",

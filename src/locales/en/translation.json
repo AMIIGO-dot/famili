@@ -26,6 +26,7 @@
   "onboarding": {
     "welcome": "Welcome to FAMILJ",
     "tagline": "Full control of your week. Without stress.",
+    "chooseLanguage": "Choose language",
     "step1Title": "What's your family called?",
     "step2Title": "Who's in the family?",
     "createFamily": "Create Your Family",

@@ -35,7 +35,9 @@ export default function AuthScreen() {
       if (error) throw error;
       setStep('otp');
     } catch (err: any) {
-      Alert.alert(t('common.error'), err.message ?? t('common.error'));
+      const msg = err?.message ?? t('common.error');
+      console.error('[Auth] signInWithOtp error:', err);
+      Alert.alert('Email not sent', msg);
     } finally {
       setLoading(false);
     }
