@@ -61,7 +61,8 @@
     "all": "All",
     "noEvents": "No events",
     "addEvent": "Add event",
-    "weekNumber": "Week {{number}}"
+    "weekNumber": "Week {{number}}",
+    "pressToAdd": "Tap to add"
   },
   "events": {
     "newEvent": "New Event",

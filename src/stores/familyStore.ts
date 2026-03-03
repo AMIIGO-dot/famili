@@ -121,12 +121,21 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   resolveCurrentMember: (userId: string) => {
-    const { members } = get();
+    const { members, family } = get();
+    // 1. Best case: member row has user_id stamped (production)
     const linked = members.find((m) => m.user_id === userId) ?? null;
-    set({
-      currentMember: linked,
-      currentMemberRole: linked?.role ?? 'parent',
-    });
+    if (linked) {
+      set({ currentMember: linked, currentMemberRole: linked.role });
+      return;
+    }
+    // 2. Fallback for family owner before user_id migration / dev mode:
+    //    treat the first parent row as the owner's own row
+    if (family?.owner_id === userId) {
+      const firstParent = members.find((m) => m.role === 'parent') ?? null;
+      set({ currentMember: firstParent, currentMemberRole: 'parent' });
+      return;
+    }
+    set({ currentMember: null, currentMemberRole: 'parent' });
   },
 
   checkPendingInvite: async (email: string, userId: string) => {

@@ -61,7 +61,8 @@
     "all": "Alle",
     "noEvents": "Keine Termine",
     "addEvent": "Termin hinzufügen",
-    "weekNumber": "Woche {{number}}"
+    "weekNumber": "Woche {{number}}",
+    "pressToAdd": "Tippen zum Hinzufügen"
   },
   "events": {
     "newEvent": "Neuer Termin",

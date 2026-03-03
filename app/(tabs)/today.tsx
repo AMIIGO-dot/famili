@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { Card } from 'heroui-native';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -471,6 +472,7 @@ export default function TodayScreen() {
       <TouchableOpacity
         style={styles.fab}
         activeOpacity={0.85}
+        onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
         onPress={() => { setPressedEvent(undefined); setSheetVisible(true); }}
       >
         <Text style={styles.fabIcon}>+</Text>

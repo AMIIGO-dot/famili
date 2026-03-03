@@ -27,6 +27,7 @@ import Animated, {
 import { useTranslation } from 'react-i18next';
 import { format, getISOWeek } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import {
   getWeekRangeByOffset,
   formatTime,
@@ -263,9 +264,12 @@ export default function WeeklyViewScreen() {
             return (
               <TouchableOpacity
                 key={idx}
-                activeOpacity={1}
-                delayLongPress={350}
-                onLongPress={() => {
+                activeOpacity={currentMemberRole === 'parent' ? 0.75 : 1}
+                onPressIn={() => {
+                  if (currentMemberRole !== 'parent') return;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                onPress={() => {
                   if (currentMemberRole !== 'parent') return;
                   setPressedDate(day); setPressedEvent(undefined); setSheetVisible(true);
                 }}
@@ -288,7 +292,9 @@ export default function WeeklyViewScreen() {
               {/* Right: event cards */}
               <View style={styles.dayEvents}>
                 {dayEvents.length === 0 ? (
-                  <Text style={styles.emptyDayText}>—</Text>
+                  currentMemberRole === 'parent'
+                    ? <Text style={styles.addHintText}>{t('weeklyView.pressToAdd', 'Press to add')}</Text>
+                    : <Text style={styles.emptyDayText}>—</Text>
                 ) : (
                   dayEvents.map((evt, eIdx) => {
                     const accentColor = getMemberColor(evt.memberIds);
@@ -343,7 +349,7 @@ export default function WeeklyViewScreen() {
 
       {/* —— FAB —— only parents can create events */}
       {currentMemberRole === 'parent' && (
-        <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={() => { setPressedDate(undefined); setPressedEvent(undefined); setSheetVisible(true); }}>
+        <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)} onPress={() => { setPressedDate(undefined); setPressedEvent(undefined); setSheetVisible(true); }}>
           <Text style={styles.fabIcon}>+</Text>
         </TouchableOpacity>
       )}
@@ -479,6 +485,12 @@ const styles = StyleSheet.create({
   dayNumToday: { color: '#fff' },
 
   dayEvents: { flex: 1, paddingRight: 14, gap: 6 },
+  addHintText: {
+    fontSize: 11,
+    color: '#C8C8CC',
+    fontStyle: 'italic',
+    letterSpacing: 0.2,
+  },
   emptyDayText: { fontSize: 13, color: '#DCDCDC', paddingTop: 6 },
 
   // Event cards

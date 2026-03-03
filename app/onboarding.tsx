@@ -114,14 +114,20 @@ export default function OnboardingScreen() {
 
       if (familyErr) throw familyErr;
 
-      // 2. Create members
+      // 2. Create members — attach user_id to the first parent (= the account creator)
+      let ownerTagged = false;
       const { error: membersErr } = await supabase.from('members').insert(
-        validMembers.map((m) => ({
-          family_id: newFamily.id,
-          name: m.name.trim(),
-          color: m.color,
-          role: m.role,
-        }))
+        validMembers.map((m) => {
+          const isOwner = m.role === 'parent' && !ownerTagged;
+          if (isOwner) ownerTagged = true;
+          return {
+            family_id: newFamily.id,
+            name: m.name.trim(),
+            color: m.color,
+            role: m.role,
+            user_id: isOwner ? user.id : null,
+          };
+        })
       );
 
       if (membersErr) throw membersErr;

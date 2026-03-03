@@ -61,7 +61,8 @@
     "all": "Alla",
     "noEvents": "Inga händelser",
     "addEvent": "Lägg till",
-    "weekNumber": "Vecka {{number}}"
+    "weekNumber": "Vecka {{number}}",
+    "pressToAdd": "Tryck för att lägga till"
   },
   "events": {
     "newEvent": "Ny händelse",

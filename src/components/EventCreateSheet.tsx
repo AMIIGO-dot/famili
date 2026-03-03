@@ -5,6 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -267,7 +268,6 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       start.setHours(startHour, startMinute, 0, 0);
       const end = new Date(d);
       end.setHours(endHour, endMinute, 0, 0);
-      // If end is before or equal to start (e.g. overnight edge), add one day
       if (end <= start) end.setDate(end.getDate() + 1);
       const recurrenceRule: RecurrenceRule | null = recurrence === 'none' ? null : {
         frequency: recurrence,
@@ -286,7 +286,6 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           is_parents_only: isParentsOnly,
           reminder_minutes: reminderMinutes,
         });
-        // Reschedule reminder
         if (reminderMinutes) {
           await scheduleEventReminder({
             eventId: editEvent.eventId,
@@ -311,7 +310,8 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           is_parents_only: isParentsOnly,
           reminder_minutes: reminderMinutes,
         });
-        if (created && reminderMinutes) {
+        if (!created) throw new Error(t('common.error'));
+        if (reminderMinutes) {
           await scheduleEventReminder({
             eventId: created.id,
             title: title.trim(),
@@ -320,11 +320,12 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           });
         }
       }
-      setTitle(''); setSelectedDateIdx(0); setStartHour(9); setStartMinute(0);
-      setEndHour(10); setEndMinute(0); setEventType('activity'); setSelectedMemberIds([]);
-      setRecurrence('none');
+      // Close first — the useEffect([visible]) handles resetting form state on next open
+      setSaving(false);
       close();
-    } finally {
+    } catch (err: any) {
+      console.error('[EventCreateSheet] save error:', err);
+      Alert.alert(t('common.error'), err?.message ?? t('common.error'));
       setSaving(false);
     }
   };

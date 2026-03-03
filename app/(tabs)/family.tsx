@@ -34,7 +34,7 @@ type DraftMember = { id?: string; name: string; color: string; role: 'parent' | 
 
 export default function FamilyScreen() {
   const { t } = useTranslation();
-  const { family, members, addMember, updateMember, deleteMember, currentMemberRole } = useFamilyStore();
+  const { family, members, addMember, updateMember, deleteMember, currentMemberRole, currentMember } = useFamilyStore();
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
 
@@ -186,8 +186,8 @@ export default function FamilyScreen() {
             </View>
             {/* Edit hint — parents only */}
             {currentMemberRole === 'parent' && <Text style={styles.editHint}>›</Text>}
-            {/* Co-parent invite: mail icon if unlinked, green checkmark if linked */}
-            {currentMemberRole === 'parent' && m.role === 'parent' && (
+            {/* Co-parent invite: mail icon if unlinked, green checkmark if linked, nothing if it's you */}
+            {currentMemberRole === 'parent' && m.role === 'parent' && m.id !== currentMember?.id && m.user_id !== user?.id && (
               m.user_id
                 ? <View style={styles.linkedBadge}>
                     <Ionicons name="checkmark" size={12} color="#fff" />
