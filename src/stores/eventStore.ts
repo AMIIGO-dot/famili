@@ -13,7 +13,7 @@ import { generateOccurrences } from '../lib/time';
 import type { Database } from '../lib/database.types';
 
 // Keep in sync with authStore.ts
-const DEV_BYPASS = true;
+const DEV_BYPASS = false;
 
 type Event = Database['public']['Tables']['events']['Row'];
 type EventInsert = Database['public']['Tables']['events']['Insert'];

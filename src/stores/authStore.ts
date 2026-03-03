@@ -12,7 +12,7 @@ import type { Database } from '../lib/database.types';
 // ─── DEV BYPASS ───────────────────────────────────────────────────────────────
 // Set to true to skip authentication entirely during development.
 // Remove before releasing to production.
-const DEV_BYPASS = true;
+const DEV_BYPASS = false;
 const DEV_FAKE_USER: User = {
   id: 'dev-user-id',
   email: 'dev@familj.app',
@@ -61,14 +61,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ isLoading: true });
     try {
-      const { data, error } = await supabase
+      // Try to fetch existing profile
+      const { data: existing, error: selectErr } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
+        .maybeSingle();
+
+      if (selectErr) throw selectErr;
+
+      if (existing) {
+        set({ profile: existing });
+        return;
+      }
+
+      // First sign-in: create a default profile
+      const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const { data: created, error: insertErr } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          language: 'en',
+          timezone: deviceTz,
+          locale: 'en-US',
+          week_start_preference: 1,
+          time_format_preference: '24h',
+        })
+        .select()
         .single();
 
-      if (error) throw error;
-      set({ profile: data });
+      if (insertErr) throw insertErr;
+      set({ profile: created });
     } catch (err) {
       console.error('[AuthStore] fetchProfile error:', err);
     } finally {

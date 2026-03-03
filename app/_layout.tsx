@@ -18,7 +18,7 @@ import { supabase } from '../src/lib/supabase';
 export default function RootLayout() {
   const { initialize, session, isInitialized, profile, user } = useAuthStore();
   const { loadFromProfile } = useSettingsStore();
-  const { fetchFamily, family } = useFamilyStore();
+  const { fetchFamily, family, isLoading: familyLoading } = useFamilyStore();
   const router = useRouter();
   const segments = useSegments();
 
@@ -75,20 +75,28 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  // Route to onboarding when user is logged in but has no family
+  // Route guard: auth → /auth, no family → /onboarding, otherwise → tabs
   useEffect(() => {
     if (!isInitialized) return;
     const inAuthGroup = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
 
-    if (!session && !inAuthGroup) {
-      router.replace('/auth');
-    } else if (session && inAuthGroup) {
-      router.replace('/(tabs)');
-    } else if (session && !family && !inOnboarding && segments[0] !== '(tabs)') {
-      router.replace('/onboarding');
+    if (!session) {
+      if (!inAuthGroup) router.replace('/auth');
+      return;
     }
-  }, [session, isInitialized, segments, family]);
+
+    // Logged in — wait for family fetch to settle before deciding
+    if (familyLoading) return;
+
+    if (family) {
+      // Has a family — boot them out of auth/onboarding screens
+      if (inAuthGroup || inOnboarding) router.replace('/(tabs)');
+    } else {
+      // No family yet — must complete onboarding
+      if (!inOnboarding) router.replace('/onboarding');
+    }
+  }, [session, isInitialized, familyLoading, family, segments]);
 
   useEffect(() => {
     if (profile) loadFromProfile(profile);

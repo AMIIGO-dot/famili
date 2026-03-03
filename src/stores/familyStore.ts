@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
 // Keep in sync with authStore.ts
-const DEV_BYPASS = true;
+const DEV_BYPASS = false;
 
 type Family = Database['public']['Tables']['families']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
@@ -45,35 +45,17 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   fetchFamily: async (userId: string) => {
-    if (DEV_BYPASS) {
-      set({
-        family: {
-          id: 'dev-family-id',
-          name: 'Familjen Ekstrand',
-          owner_id: 'dev-user-id',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as unknown as Family,
-        members: [
-          { id: 'dev-member-1', family_id: 'dev-family-id', name: 'Simon', color: '#5B9CF6', role: 'parent', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-          { id: 'dev-member-2', family_id: 'dev-family-id', name: 'Emma',  color: '#F97B8B', role: 'parent', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-          { id: 'dev-member-3', family_id: 'dev-family-id', name: 'Liam',  color: '#68D9A4', role: 'child',  created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        ] as unknown as Member[],
-        isLoading: false,
-      });
-      return;
-    }
-
     set({ isLoading: true });
     try {
+      // maybeSingle() returns null (not an error) when the user has no family yet
       const { data, error } = await supabase
         .from('families')
         .select('*')
         .eq('owner_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      set({ family: data });
+      set({ family: data ?? null });
       if (data) await get().fetchMembers();
     } catch (err) {
       console.error('[FamilyStore] fetchFamily error:', err);

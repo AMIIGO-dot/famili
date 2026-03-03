@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { useFamilyStore } from '../stores/familyStore';
 import { useEventsStore, EventOccurrence } from '../stores/eventStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useAuthStore } from '../stores/authStore';
 import { convertUTCToLocal } from '../lib/time';
 
 const EVENT_TYPES = ['activity', 'homework', 'test', 'other'] as const;
@@ -72,6 +73,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const { members, family } = useFamilyStore();
   const { createEvent, updateEvent, deleteEvent } = useEventsStore();
   const { timezone } = useSettingsStore();
+  const { user } = useAuthStore();
 
   const stripStart = useMemo(() => clampToToday(initialDate ?? new Date()), [initialDate]);
   const dateStrip = useMemo(() => buildDateStrip(stripStart), [stripStart]);
@@ -207,6 +209,8 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           type: eventType,
           start_time_utc: start.toISOString(),
           end_time_utc: end.toISOString(),
+          timezone,
+          created_by: user?.id ?? '',
           member_ids: selectedMemberIds.length > 0 ? selectedMemberIds : members.map((m) => m.id),
           recurrence_rule: null,
         });
