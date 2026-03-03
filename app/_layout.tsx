@@ -16,12 +16,14 @@ import '../src/i18n';
 import { useAuthStore } from '../src/stores/authStore';
 import { useSettingsStore } from '../src/stores/settingsStore';
 import { useFamilyStore } from '../src/stores/familyStore';
+import { useChildAuthStore } from '../src/stores/childAuthStore';
 import { supabase } from '../src/lib/supabase';
 
 export default function RootLayout() {
   const { initialize, session, isInitialized, profile, user } = useAuthStore();
   const { loadFromProfile } = useSettingsStore();
-  const { fetchFamily, family, isLoading: familyLoading } = useFamilyStore();
+  const { fetchFamily, family, isLoading: familyLoading, currentMemberRole } = useFamilyStore();
+  const { pinVerified: childPinVerified } = useChildAuthStore();
   const router = useRouter();
   const segments = useSegments();
 
@@ -78,14 +80,17 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  // Route guard: auth → /auth, no family → /onboarding, otherwise → tabs
+  // Route guard: auth → /auth, no family → /onboarding, child !pinVerified → /child-pin-login
   useEffect(() => {
     if (!isInitialized) return;
     const inAuthGroup = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
+    const inChildJoin = segments[0] === 'child-join';
+    const inChildPinCreate = segments[0] === 'child-pin-create';
+    const inChildPinLogin = segments[0] === 'child-pin-login';
 
     if (!session) {
-      if (!inAuthGroup) router.replace('/auth');
+      if (!inAuthGroup && !inChildJoin) router.replace('/auth');
       return;
     }
 
@@ -93,13 +98,26 @@ export default function RootLayout() {
     if (familyLoading) return;
 
     if (family) {
-      // Has a family — boot them out of auth/onboarding screens
-      if (inAuthGroup || inOnboarding) router.replace('/(tabs)');
+      // Has a family — boot them out of auth/onboarding/child-join screens
+      if (inAuthGroup || inOnboarding || inChildJoin) {
+        router.replace('/(tabs)');
+        return;
+      }
+      // Child PIN gate — must verify PIN before accessing tabs
+      if (
+        currentMemberRole === 'child' &&
+        !childPinVerified &&
+        !inChildPinLogin &&
+        !inChildPinCreate
+      ) {
+        router.replace('/child-pin-login');
+        return;
+      }
     } else {
       // No family yet — must complete onboarding
       if (!inOnboarding) router.replace('/onboarding');
     }
-  }, [session, isInitialized, familyLoading, family, segments]);
+  }, [session, isInitialized, familyLoading, family, segments, currentMemberRole, childPinVerified]);
 
   useEffect(() => {
     if (profile) loadFromProfile(profile);

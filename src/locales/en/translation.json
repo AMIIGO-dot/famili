@@ -117,6 +117,36 @@
   "family": {
     "confirmDelete": "Remove {{name}} from the family?"
   },
+  "childJoin": {
+    "heading": "Join your family",
+    "sub": "Enter the code you got from a parent",
+    "tabCode": "Enter code",
+    "tabQR": "Scan QR",
+    "invalidCode": "Code not found or expired",
+    "join": "Join",
+    "cameraPermission": "Camera access is required to scan the QR code",
+    "allowCamera": "Allow camera",
+    "checking": "Checking code…",
+    "joinAsChild": "I\u2019m a child \u2013 join with a code"
+  },
+  "childPin": {
+    "createTitle": "Hi {{name}}! Choose a PIN",
+    "createSub": "4 digits to unlock the app",
+    "confirmTitle": "Enter PIN again",
+    "confirmSub": "Just to be sure",
+    "loginTitle": "Enter your PIN",
+    "loginGreeting": "Hi {{name}}!",
+    "loginSub": "Enter your PIN to continue",
+    "wrongPin": "Wrong PIN \u2013 try again",
+    "forgot": "Forgot PIN? Re-join with a new code"
+  },
+  "invite": {
+    "title": "Invite {{name}}",
+    "subtitle": "Show this to {{name}} to join the family",
+    "orEnterCode": "Or enter this code manually",
+    "expiresIn": "Valid for {{hours}} hours",
+    "generateNew": "Generate new code"
+  },
   "subscription": {
     "premium": "FAMILJ Premium",
     "currentPlan": "Current plan: {{plan}}",

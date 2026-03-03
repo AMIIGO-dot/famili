@@ -116,8 +116,36 @@
   },
   "family": {
     "confirmDelete": "Ta bort {{name}} ur familjen?"
+  },  "childJoin": {
+    "heading": "G\u00e5 med i din familj",
+    "sub": "Ange koden du fick fr\u00e5n en f\u00f6r\u00e4lder",
+    "tabCode": "Ange kod",
+    "tabQR": "Skanna QR",
+    "invalidCode": "Koden hittades inte eller har g\u00e5tt ut",
+    "join": "G\u00e5 med",
+    "cameraPermission": "Kamera\u00e5tkomst kr\u00e4vs f\u00f6r att skanna QR-koden",
+    "allowCamera": "Till\u00e5t kamera",
+    "checking": "Kontrollerar kod\u2026",
+    "joinAsChild": "Jag \u00e4r ett barn \u2013 g\u00e5 med med en kod"
   },
-  "subscription": {
+  "childPin": {
+    "createTitle": "Hej {{name}}! V\u00e4lj en PIN-kod",
+    "createSub": "4 siffror f\u00f6r att l\u00e5sa upp appen",
+    "confirmTitle": "Ange PIN-koden igen",
+    "confirmSub": "Bara f\u00f6r s\u00e4kerhets skull",
+    "loginTitle": "Ange din PIN-kod",
+    "loginGreeting": "Hej {{name}}!",
+    "loginSub": "Ange din PIN-kod f\u00f6r att forts\u00e4tta",
+    "wrongPin": "Fel PIN-kod \u2013 f\u00f6rs\u00f6k igen",
+    "forgot": "Gl\u00f6mt PIN? G\u00e5 med igen med en ny kod"
+  },
+  "invite": {
+    "title": "Bjud in {{name}}",
+    "subtitle": "Visa det h\u00e4r f\u00f6r {{name}} f\u00f6r att g\u00e5 med i familjen",
+    "orEnterCode": "Eller ange den h\u00e4r koden manuellt",
+    "expiresIn": "Giltig i {{hours}} timmar",
+    "generateNew": "Generera ny kod"
+  },  "subscription": {
     "premium": "FAMILJ Premium",
     "currentPlan": "Nuvarande plan: {{plan}}",
     "planFree": "Gratis",

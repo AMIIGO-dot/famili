@@ -152,6 +152,35 @@ export type Database = {
         };
         Relationships: [];
       };
+      invite_codes: {
+        Row: {
+          id: string;
+          code: string;           // 6-digit zero-padded string, e.g. "047291"
+          member_id: string;
+          family_id: string;
+          created_by: string;     // parent user_id
+          used_by: string | null; // child user_id after redemption
+          used_at: string | null;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          member_id: string;
+          family_id: string;
+          created_by: string;
+          used_by?: string | null;
+          used_at?: string | null;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          used_by?: string | null;
+          used_at?: string | null;
+        };
+        Relationships: [];
+      };
       subscriptions: {
         Row: {
           user_id: string;

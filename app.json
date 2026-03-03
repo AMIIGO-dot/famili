@@ -35,7 +35,8 @@
       "expo-router",
       "expo-localization",
       "expo-font",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

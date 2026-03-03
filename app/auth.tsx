@@ -15,10 +15,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 import { supabase } from '../src/lib/supabase';
 
 export default function AuthScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -125,6 +127,15 @@ export default function AuthScreen() {
             </TouchableOpacity>
           </>
         )}
+
+        {/* Child join entry point */}
+        <TouchableOpacity
+          style={styles.childJoinBtn}
+          onPress={() => router.push('/child-join')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.childJoinText}>{t('childJoin.joinAsChild')}</Text>
+        </TouchableOpacity>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -204,5 +215,15 @@ const styles = StyleSheet.create({
   backText: {
     color: '#6E6E7A',
     fontSize: 14,
+  },
+  childJoinBtn: {
+    marginTop: 32,
+    alignItems: 'center',
+    padding: 8,
+  },
+  childJoinText: {
+    color: '#AEAEB2',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });

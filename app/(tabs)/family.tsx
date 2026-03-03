@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheet, Button, TextField, Input, Label } from 'heroui-native';
 import { useFamilyStore } from '../../src/stores/familyStore';
+import InviteSheet from '../../src/components/InviteSheet';
 
 const COLORS = [
   '#5B9CF6', '#F97B8B', '#68D9A4', '#F5A623',
@@ -36,6 +37,8 @@ export default function FamilyScreen() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<DraftMember | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteMember, setInviteMember] = useState<typeof members[0] | null>(null);
 
   const openAdd = () => {
     setEditing({ name: '', color: COLORS[members.length % COLORS.length], role: 'parent' });
@@ -161,6 +164,16 @@ export default function FamilyScreen() {
             </View>
             {/* Edit hint — parents only */}
             {currentMemberRole === 'parent' && <Text style={styles.editHint}>›</Text>}
+            {/* Invite button — parents only, for child members */}
+            {currentMemberRole === 'parent' && m.role === 'child' && (
+              <TouchableOpacity
+                style={styles.inviteBtn}
+                onPress={() => { setInviteMember(m); setInviteOpen(true); }}
+                hitSlop={10}
+              >
+                <Ionicons name="person-add-outline" size={16} color="#5B9CF6" />
+              </TouchableOpacity>
+            )}
             {/* Delete — parents only */}
             {currentMemberRole === 'parent' && (
               <TouchableOpacity
@@ -268,6 +281,16 @@ export default function FamilyScreen() {
           </BottomSheet.Content>
         </BottomSheet.Portal>
       </BottomSheet>
+
+      {/* Invite sheet — show QR + code for child member */}
+      {inviteMember && family && (
+        <InviteSheet
+          open={inviteOpen}
+          member={inviteMember as any}
+          familyId={family.id}
+          onClose={() => { setInviteOpen(false); setInviteMember(null); }}
+        />
+      )}
       </View>
     </SafeAreaView>
   );
@@ -369,6 +392,7 @@ const styles = StyleSheet.create({
   editHint: { fontSize: 20, color: '#C0C0C8', marginRight: 4 },
   deleteBtn: { padding: 6 },
   deleteBtnText: { fontSize: 13, color: '#C0C0C8', fontWeight: '600' },
+  inviteBtn: { padding: 6, marginRight: 2 },
 
   addBtn: {
     marginTop: 8,

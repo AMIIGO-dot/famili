@@ -9,14 +9,13 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { BottomSheet, Button, Input } from 'heroui-native';
+import { BottomSheet, Button, Input, Switch } from 'heroui-native';
 import { useFamilyStore } from '../stores/familyStore';
 import { useEventsStore, EventOccurrence } from '../stores/eventStore';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -288,25 +287,16 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
 
               {/* PARENTS ONLY — only shown to parents */}
               {currentMemberRole === 'parent' && (
-                <TouchableOpacity
-                  style={styles.parentsOnlyRow}
-                  onPress={() => setIsParentsOnly((v) => !v)}
-                  activeOpacity={0.7}
-                >
+                <View style={styles.parentsOnlyRow}>
                   <View style={styles.parentsOnlyLeft}>
-                    <Text style={styles.parentsOnlyIcon}>🔒</Text>
-                    <View>
-                      <Text style={styles.parentsOnlyLabel}>{t('events.parentsOnly')}</Text>
-                      <Text style={styles.parentsOnlyHint}>{t('events.parentsOnlyHint')}</Text>
-                    </View>
+                    <Text style={styles.parentsOnlyLabel}>{t('events.parentsOnly')}</Text>
+                    <Text style={styles.parentsOnlyHint}>{t('events.parentsOnlyHint')}</Text>
                   </View>
                   <Switch
-                    value={isParentsOnly}
-                    onValueChange={setIsParentsOnly}
-                    trackColor={{ false: '#E5E5EA', true: '#2C2C2E' }}
-                    thumbColor="#fff"
+                    isSelected={isParentsOnly}
+                    onSelectedChange={setIsParentsOnly}
                   />
-                </TouchableOpacity>
+                </View>
               )}
 
               {/* WHO */}
@@ -538,8 +528,7 @@ const styles = StyleSheet.create({
 
   // Parents-only toggle
   parentsOnlyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
-  parentsOnlyLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  parentsOnlyIcon: { fontSize: 16 },
+  parentsOnlyLeft: { flex: 1, paddingRight: 12 },
   parentsOnlyLabel: { fontSize: 13, fontWeight: '600', color: '#2C2C2E' },
   parentsOnlyHint: { fontSize: 11, color: '#9999A6', marginTop: 1 },
 

@@ -117,6 +117,36 @@
   "family": {
     "confirmDelete": "{{name}} aus der Familie entfernen?"
   },
+  "childJoin": {
+    "heading": "Deiner Familie beitreten",
+    "sub": "Gib den Code ein, den du von einem Elternteil erhalten hast",
+    "tabCode": "Code eingeben",
+    "tabQR": "QR scannen",
+    "invalidCode": "Code nicht gefunden oder abgelaufen",
+    "join": "Beitreten",
+    "cameraPermission": "Kamerazugriff ben\u00f6tigt um den QR-Code zu scannen",
+    "allowCamera": "Kamera erlauben",
+    "checking": "Code wird gepr\u00fcft\u2026",
+    "joinAsChild": "Ich bin ein Kind \u2013 mit Code beitreten"
+  },
+  "childPin": {
+    "createTitle": "Hallo {{name}}! W\u00e4hle eine PIN",
+    "createSub": "4 Ziffern zum Entsperren der App",
+    "confirmTitle": "PIN erneut eingeben",
+    "confirmSub": "Nur zur Sicherheit",
+    "loginTitle": "PIN eingeben",
+    "loginGreeting": "Hallo {{name}}!",
+    "loginSub": "Gib deine PIN ein um fortzufahren",
+    "wrongPin": "Falsche PIN \u2013 versuch es nochmal",
+    "forgot": "PIN vergessen? Mit neuem Code beitreten"
+  },
+  "invite": {
+    "title": "{{name}} einladen",
+    "subtitle": "Zeig dies {{name}} um der Familie beizutreten",
+    "orEnterCode": "Oder diesen Code manuell eingeben",
+    "expiresIn": "G\u00fcltig f\u00fcr {{hours}} Stunden",
+    "generateNew": "Neuen Code generieren"
+  },
   "subscription": {
     "premium": "FAMILJ Premium",
     "currentPlan": "Aktueller Plan: {{plan}}",
