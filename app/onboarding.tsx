@@ -1,13 +1,11 @@
 /**
  * FAMILJ – Onboarding Screen
  *
- * Step 1: Family name
- * Step 2: Add family members (name + color + role)
- *
- * Works with DEV_BYPASS (sets local state) and real Supabase.
+ * Step 1: Language + Family name
+ * Step 2: Add family members (name + role + color)
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -18,24 +16,25 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useFamilyStore } from '../src/stores/familyStore';
 import { useAuthStore } from '../src/stores/authStore';
 import { useSettingsStore } from '../src/stores/settingsStore';
-import i18n, { SUPPORTED_LANGUAGES, getBestLanguage } from '../src/i18n';
+import i18n from '../src/i18n';
 import type { SupportedLanguage } from '../src/i18n';
-import * as Localization from 'expo-localization';
 
-const PRESET_COLORS = ['#5B9CF6', '#F97B8B', '#68D9A4', '#F5A623', '#B48AE6', '#FF8C42', '#4ECDC4'];
+const PRESET_COLORS = ['#44B57F', '#F97B8B', '#5B9CF6', '#F5A623', '#B48AE6', '#FF8C42', '#4ECDC4'];
 
-const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
-  en: '🇬🇧  English',
-  sv: '🇸🇪  Svenska',
-  de: '🇩🇪  Deutsch',
-};
+const LANGUAGE_OPTIONS: { code: SupportedLanguage; label: string; native: string }[] = [
+  { code: 'sv', label: 'SV', native: 'Svenska' },
+  { code: 'en', label: 'EN', native: 'English' },
+  { code: 'de', label: 'DE', native: 'Deutsch' },
+];
 
 interface DraftMember {
   name: string;
@@ -50,11 +49,18 @@ export default function OnboardingScreen() {
   const { fetchFamily } = useFamilyStore();
   const { setLanguage } = useSettingsStore();
 
-  // Default to device language, fall back to 'en'
-  const deviceLang = getBestLanguage(
-    Localization.getLocales()[0]?.languageTag ?? 'en'
-  );
-  const [selectedLang, setSelectedLang] = useState<SupportedLanguage>(deviceLang);
+  // Default to Swedish
+  const [selectedLang, setSelectedLang] = useState<SupportedLanguage>('sv');
+
+  // Apply Swedish immediately on mount
+  useEffect(() => {
+    i18n.changeLanguage('sv');
+  }, []);
+
+  const handleSelectLang = (lang: SupportedLanguage) => {
+    setSelectedLang(lang);
+    i18n.changeLanguage(lang);
+  };
 
   const [step, setStep] = useState<1 | 2>(1);
   const [familyName, setFamilyName] = useState('');
@@ -140,37 +146,60 @@ export default function OnboardingScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Progress dots */}
+        {/* Progress bar */}
         <View style={styles.progressRow}>
-          <View style={[styles.dot, step >= 1 && styles.dotActive]} />
-          <View style={[styles.dot, step >= 2 && styles.dotActive]} />
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: step === 1 ? '50%' : '100%' }]} />
+          </View>
         </View>
 
         {step === 1 ? (
-          /* ── Step 1: Language + Family name ── */
-          <View style={styles.stepContainer}>
-            <Text style={styles.appName}>{t('common.appName')}</Text>
-
-            {/* Language picker */}
-            <Text style={styles.langLabel}>{t('onboarding.chooseLanguage')}</Text>
-            <View style={styles.langRow}>
-              {SUPPORTED_LANGUAGES.map((lang) => (
-                <TouchableOpacity
-                  key={lang}
-                  style={[styles.langChip, selectedLang === lang && styles.langChipActive]}
-                  onPress={() => {
-                    setSelectedLang(lang);
-                    i18n.changeLanguage(lang);
-                  }}
-                >
-                  <Text style={[styles.langChipText, selectedLang === lang && styles.langChipTextActive]}>
-                    {LANGUAGE_LABELS[lang]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          /* ── Step 1: Logo + Language + Family name ── */
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.stepContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Logo */}
+            <View style={styles.logoWrap}>
+              <Image
+                source={require('../assets/FAMILU app logo-green(1000 x 500 px) (1).png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
 
-            <Text style={styles.stepTitle}>{t('onboarding.step1Title')}</Text>
+            {/* Language selector */}
+            <Text style={styles.sectionLabel}>{t('onboarding.chooseLanguage')}</Text>
+            <View style={styles.langRow}>
+              {LANGUAGE_OPTIONS.map((opt) => {
+                const active = selectedLang === opt.code;
+                return (
+                  <TouchableOpacity
+                    key={opt.code}
+                    style={[styles.langCard, active && styles.langCardActive]}
+                    onPress={() => handleSelectLang(opt.code)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.langCardCode, active && styles.langCardCodeActive]}>
+                      {opt.label}
+                    </Text>
+                    <Text style={[styles.langCardNative, active && styles.langCardNativeActive]}>
+                      {opt.native}
+                    </Text>
+                    {active && (
+                      <View style={styles.langCheckWrap}>
+                        <Ionicons name="checkmark" size={12} color="#fff" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Family name */}
+            <Text style={styles.sectionLabel}>{t('onboarding.step1Title')}</Text>
             <TextInput
               style={styles.input}
               placeholder={t('onboarding.familyNamePlaceholder')}
@@ -185,10 +214,12 @@ export default function OnboardingScreen() {
               style={[styles.btn, !familyName.trim() && styles.btnDisabled]}
               onPress={() => setStep(2)}
               disabled={!familyName.trim()}
+              activeOpacity={0.85}
             >
-              <Text style={styles.btnText}>{t('onboarding.next')} →</Text>
+              <Text style={styles.btnText}>{t('onboarding.next')}</Text>
+              <Ionicons name="arrow-forward" size={16} color="#fff" style={{ marginLeft: 6 }} />
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         ) : (
           /* ── Step 2: Members ── */
           <View style={{ flex: 1 }}>
@@ -200,15 +231,25 @@ export default function OnboardingScreen() {
             >
               {draftMembers.map((member, idx) => (
                 <View key={idx} style={styles.memberCard}>
-                  {/* Name input */}
-                  <TextInput
-                    style={styles.memberNameInput}
-                    placeholder={t('onboarding.memberNamePlaceholder')}
-                    placeholderTextColor="#AEAEB2"
-                    value={member.name}
-                    onChangeText={(v) => updateDraftMember(idx, { name: v })}
-                    autoCapitalize="words"
-                  />
+                  <View style={styles.memberCardHeader}>
+                    <TextInput
+                      style={styles.memberNameInput}
+                      placeholder={t('onboarding.memberNamePlaceholder')}
+                      placeholderTextColor="#AEAEB2"
+                      value={member.name}
+                      onChangeText={(v) => updateDraftMember(idx, { name: v })}
+                      autoCapitalize="words"
+                    />
+                    {draftMembers.length > 1 && (
+                      <TouchableOpacity
+                        style={styles.removeBtn}
+                        onPress={() => removeDraftMember(idx)}
+                        hitSlop={8}
+                      >
+                        <Ionicons name="close" size={18} color="#AEAEB2" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
 
                   {/* Role picker */}
                   <View style={styles.roleRow}>
@@ -217,19 +258,13 @@ export default function OnboardingScreen() {
                         key={role}
                         style={[styles.roleChip, member.role === role && styles.roleChipActive]}
                         onPress={() => updateDraftMember(idx, { role })}
+                        activeOpacity={0.75}
                       >
                         <Text style={[styles.roleChipText, member.role === role && styles.roleChipTextActive]}>
                           {t(`onboarding.memberRole${role.charAt(0).toUpperCase()}${role.slice(1)}` as any)}
                         </Text>
                       </TouchableOpacity>
                     ))}
-
-                    {/* Remove button */}
-                    {draftMembers.length > 1 && (
-                      <TouchableOpacity style={styles.removeBtn} onPress={() => removeDraftMember(idx)}>
-                        <Text style={styles.removeBtnText}>✕</Text>
-                      </TouchableOpacity>
-                    )}
                   </View>
 
                   {/* Color picker */}
@@ -249,21 +284,23 @@ export default function OnboardingScreen() {
                 </View>
               ))}
 
-              {/* Add member */}
-              <TouchableOpacity style={styles.addMemberBtn} onPress={addDraftMember}>
+              <TouchableOpacity style={styles.addMemberBtn} onPress={addDraftMember} activeOpacity={0.7}>
+                <Ionicons name="add" size={18} color="#44B57F" />
                 <Text style={styles.addMemberText}>{t('onboarding.addMember')}</Text>
               </TouchableOpacity>
             </ScrollView>
 
-            {/* Footer buttons */}
+            {/* Footer */}
             <View style={styles.footer}>
-              <TouchableOpacity style={styles.backBtn} onPress={() => setStep(1)}>
-                <Text style={styles.backBtnText}>← Back</Text>
+              <TouchableOpacity style={styles.backBtn} onPress={() => setStep(1)} activeOpacity={0.7}>
+                <Ionicons name="arrow-back" size={18} color="#44B57F" />
+                <Text style={styles.backBtnText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btn, styles.btnFlex, saving && styles.btnDisabled]}
                 onPress={handleFinish}
                 disabled={saving}
+                activeOpacity={0.85}
               >
                 <Text style={styles.btnText}>
                   {saving ? t('common.loading') : t('onboarding.getStarted')}
@@ -283,73 +320,67 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAF8',
     paddingHorizontal: 24,
   },
-  progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    paddingTop: 16,
-    paddingBottom: 8,
+
+  // Progress bar
+  progressRow: { paddingTop: 16, paddingBottom: 8 },
+  progressTrack: { height: 3, backgroundColor: '#E8E8E4', borderRadius: 2, overflow: 'hidden' },
+  progressFill: { height: 3, backgroundColor: '#44B57F', borderRadius: 2 },
+
+  // Step 1 scroll content
+  stepContent: { paddingBottom: 32, paddingTop: 8 },
+
+  // Logo block
+  logoWrap: {
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 44,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#E0E0DA',
-  },
-  dotActive: {
-    backgroundColor: '#44B57F',
-    width: 20,
-  },
-  stepContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#2C2C2E',
-    letterSpacing: 3,
-    textAlign: 'center',
-    marginBottom: 28,
-  },
-  langLabel: {
-    fontSize: 12,
+  logo: { width: 180, height: 90 },
+
+  // Section label
+  sectionLabel: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#9999A6',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 10,
+    letterSpacing: 0.9,
+    marginBottom: 12,
   },
-  langRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 28,
-  },
-  langChip: {
+
+  // Language cards
+  langRow: { flexDirection: 'row', gap: 10, marginBottom: 36 },
+  langCard: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderRadius: 14,
     backgroundColor: '#F0F0EC',
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    position: 'relative',
   },
-  langChipActive: {
+  langCardActive: { backgroundColor: '#F0FFF8', borderColor: '#44B57F' },
+  langCardCode: { fontSize: 15, fontWeight: '800', color: '#AEAEB2', letterSpacing: 1, marginBottom: 2 },
+  langCardCodeActive: { color: '#44B57F' },
+  langCardNative: { fontSize: 11, fontWeight: '500', color: '#AEAEB2' },
+  langCardNativeActive: { color: '#44B57F' },
+  langCheckWrap: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#44B57F',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  langChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6E6E7A',
-  },
-  langChipTextActive: {
-    color: '#FAFAF8',
-  },
-  stepTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#2C2C2E',
-    marginBottom: 16,
-    lineHeight: 28,
-  },
+
+  // Step 2 title
+  stepTitle: { fontSize: 22, fontWeight: '700', color: '#2C2C2E', marginTop: 8, marginBottom: 16, lineHeight: 28 },
+
+  // Input
   input: {
     backgroundColor: '#F0F0EC',
     borderRadius: 12,
@@ -359,108 +390,70 @@ const styles = StyleSheet.create({
     color: '#2C2C2E',
     marginBottom: 16,
   },
+
+  // Button
   btn: {
     backgroundColor: '#44B57F',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
-  btnFlex: {
-    flex: 1,
-  },
-  btnDisabled: {
-    opacity: 0.4,
-  },
-  btnText: {
-    color: '#FAFAF8',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  btnFlex: { flex: 1 },
+  btnDisabled: { opacity: 0.4 },
+  btnText: { color: '#FAFAF8', fontSize: 16, fontWeight: '600' },
+
+  // Member cards
   memberCard: {
-    backgroundColor: '#F0F0EC',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 16,
     marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
+  memberCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   memberNameInput: {
+    flex: 1,
     fontSize: 16,
     fontWeight: '600',
     color: '#2C2C2E',
-    paddingVertical: 4,
+    paddingVertical: 0,
     borderBottomWidth: 1,
-    borderBottomColor: '#DDDDD8',
-    marginBottom: 10,
+    borderBottomColor: '#E8E8E4',
+    paddingBottom: 6,
   },
-  roleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 10,
-    alignItems: 'center',
-  },
-  roleChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#E0E0DA',
-  },
-  roleChipActive: {
-    backgroundColor: '#44B57F',
-  },
-  roleChipText: {
-    fontSize: 13,
-    color: '#6E6E7A',
-    fontWeight: '500',
-  },
-  roleChipTextActive: {
-    color: '#FAFAF8',
-  },
-  removeBtn: {
-    marginLeft: 'auto' as any,
-    padding: 4,
-  },
-  removeBtnText: {
-    color: '#AEAEB2',
-    fontSize: 16,
-  },
-  colorRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  colorDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  colorDotSelected: {
-    borderWidth: 3,
-    borderColor: '#44B57F',
-  },
+  removeBtn: { marginLeft: 12, padding: 4 },
+  roleRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  roleChip: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F0F0EC' },
+  roleChipActive: { backgroundColor: '#44B57F' },
+  roleChipText: { fontSize: 13, color: '#6E6E7A', fontWeight: '500' },
+  roleChipTextActive: { color: '#FAFAF8', fontWeight: '600' },
+  colorRow: { flexDirection: 'row', gap: 10 },
+  colorDot: { width: 28, height: 28, borderRadius: 14 },
+  colorDotSelected: { borderWidth: 3, borderColor: '#44B57F' },
+
+  // Add member
   addMemberBtn: {
     borderWidth: 1.5,
-    borderColor: '#C8C8CC',
+    borderColor: '#D0D0CC',
     borderStyle: 'dashed',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 4,
-  },
-  addMemberText: {
-    fontSize: 15,
-    color: '#6E6E7A',
-    fontWeight: '500',
-  },
-  footer: {
     flexDirection: 'row',
-    gap: 12,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  backBtn: {
-    paddingHorizontal: 16,
     justifyContent: 'center',
+    gap: 6,
   },
-  backBtnText: {
-    fontSize: 15,
-    color: '#6E6E7A',
-  },
+  addMemberText: { fontSize: 15, color: '#44B57F', fontWeight: '600' },
+
+  // Footer
+  footer: { flexDirection: 'row', gap: 12, paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 4, paddingVertical: 8 },
+  backBtnText: { fontSize: 15, color: '#44B57F', fontWeight: '500' },
 });

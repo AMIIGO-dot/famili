@@ -186,7 +186,21 @@ export default function FamilyScreen() {
             </View>
             {/* Edit hint — parents only */}
             {currentMemberRole === 'parent' && <Text style={styles.editHint}>›</Text>}
-            {/* Invite button — parents only, for child members */}
+            {/* Co-parent invite: mail icon if unlinked, green checkmark if linked */}
+            {currentMemberRole === 'parent' && m.role === 'parent' && (
+              m.user_id
+                ? <View style={styles.linkedBadge}>
+                    <Ionicons name="checkmark" size={12} color="#fff" />
+                  </View>
+                : <TouchableOpacity
+                    style={styles.inviteBtn}
+                    onPress={() => { setParentInviteEmail(''); setParentInviteSent(false); setParentInviteOpen(true); }}
+                    hitSlop={10}
+                  >
+                    <Ionicons name="mail-outline" size={17} color="#44B57F" />
+                  </TouchableOpacity>
+            )}
+            {/* Child PIN invite button */}
             {currentMemberRole === 'parent' && m.role === 'child' && (
               <TouchableOpacity
                 style={styles.inviteBtn}
@@ -213,18 +227,6 @@ export default function FamilyScreen() {
         {currentMemberRole === 'parent' && (
           <TouchableOpacity style={styles.addBtn} onPress={openAdd} activeOpacity={0.7}>
             <Text style={styles.addBtnText}>{t('onboarding.addMember', '+ Add person')}</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Invite co-parent — parents only */}
-        {currentMemberRole === 'parent' && (
-          <TouchableOpacity
-            style={[styles.addBtn, styles.coParentBtn]}
-            onPress={() => { setParentInviteEmail(''); setParentInviteSent(false); setParentInviteOpen(true); }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="mail-outline" size={14} color="#44B57F" style={{ marginRight: 6 }} />
-            <Text style={[styles.addBtnText, { color: '#44B57F' }]}>{t('parentInvite.button')}</Text>
           </TouchableOpacity>
         )}
 
@@ -501,6 +503,15 @@ const styles = StyleSheet.create({
   deleteBtn: { padding: 6 },
   deleteBtnText: { fontSize: 13, color: '#C0C0C8', fontWeight: '600' },
   inviteBtn: { padding: 6, marginRight: 2 },
+  linkedBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#44B57F',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 2,
+  },
 
   addBtn: {
     marginTop: 8,
@@ -566,13 +577,7 @@ const styles = StyleSheet.create({
   colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginBottom: 24 },
   colorSwatch: { width: 32, height: 32, borderRadius: 16 },
   colorSwatchSel: { borderWidth: 3, borderColor: '#44B57F' },
-  coParentBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    borderColor: '#44B57F',
-  },
+
   sentWrap: { alignItems: 'center', paddingVertical: 16, gap: 8 },
   sentTitle: { fontSize: 18, fontWeight: '700', color: '#2C2C2E', marginTop: 8 },
   sentSub: { fontSize: 14, color: '#9999A6', textAlign: 'center', lineHeight: 20 },
