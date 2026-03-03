@@ -24,10 +24,15 @@ interface FamilyState {
   // Computed
   isPremium: boolean;
 
+  // Current logged-in user's member record (null = family owner with full parent access)
+  currentMember: Member | null;
+  currentMemberRole: 'parent' | 'child';
+
   // Actions
   fetchFamily: (userId: string) => Promise<void>;
   fetchMembers: () => Promise<void>;
   fetchSubscription: (userId: string) => Promise<void>;
+  resolveCurrentMember: (userId: string) => void;
   addMember: (member: Database['public']['Tables']['members']['Insert']) => Promise<Member | null>;
   updateMember: (id: string, updates: Database['public']['Tables']['members']['Update']) => Promise<void>;
   deleteMember: (id: string) => Promise<void>;
@@ -38,6 +43,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   members: [],
   subscription: null,
   isLoading: false,
+  currentMember: null,
+  currentMemberRole: 'parent',
 
   get isPremium() {
     const sub = get().subscription;
@@ -46,13 +53,17 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
   fetchFamily: async (userId: string) => {
     if (DEV_BYPASS) {
+      const devMembers: Member[] = [
+        { id: 'dev-member-1', family_id: 'dev-family-id', name: 'Simon', color: '#FF6B6B', role: 'parent', user_id: 'dev-user-id' } as Member,
+        { id: 'dev-member-2', family_id: 'dev-family-id', name: 'Emma',  color: '#4ECDC4', role: 'parent', user_id: null } as Member,
+        { id: 'dev-member-3', family_id: 'dev-family-id', name: 'Liam',  color: '#45B7D1', role: 'child',  user_id: null } as Member,
+      ];
+      const linked = devMembers.find((m) => m.user_id === userId) ?? null;
       set({
         family: { id: 'dev-family-id', name: 'Dev Family', owner_id: 'dev-user-id', created_at: new Date().toISOString() } as any,
-        members: [
-          { id: 'dev-member-1', family_id: 'dev-family-id', name: 'Simon', color: '#FF6B6B', avatar_url: null, created_at: new Date().toISOString() } as any,
-          { id: 'dev-member-2', family_id: 'dev-family-id', name: 'Emma', color: '#4ECDC4', avatar_url: null, created_at: new Date().toISOString() } as any,
-          { id: 'dev-member-3', family_id: 'dev-family-id', name: 'Liam', color: '#45B7D1', avatar_url: null, created_at: new Date().toISOString() } as any,
-        ],
+        members: devMembers,
+        currentMember: linked,
+        currentMemberRole: linked?.role ?? 'parent',
         isLoading: false,
       });
       return;
@@ -68,7 +79,10 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
       if (error) throw error;
       set({ family: data ?? null });
-      if (data) await get().fetchMembers();
+      if (data) {
+        await get().fetchMembers();
+        get().resolveCurrentMember(userId);
+      }
     } catch (err) {
       console.error('[FamilyStore] fetchFamily error:', err);
     } finally {
@@ -90,6 +104,15 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       return;
     }
     set({ members: data ?? [] });
+  },
+
+  resolveCurrentMember: (userId: string) => {
+    const { members } = get();
+    const linked = members.find((m) => m.user_id === userId) ?? null;
+    set({
+      currentMember: linked,
+      currentMemberRole: linked?.role ?? 'parent',
+    });
   },
 
   fetchSubscription: async (userId: string) => {

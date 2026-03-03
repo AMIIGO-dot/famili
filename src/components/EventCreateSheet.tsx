@@ -5,20 +5,18 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Keyboard,
   KeyboardAvoidingView,
-  Modal,
-  Pressable,
+  Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { BottomSheet, Button, Input } from 'heroui-native';
 import { useFamilyStore } from '../stores/familyStore';
 import { useEventsStore, EventOccurrence } from '../stores/eventStore';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -67,11 +65,11 @@ interface Props {
 export default function EventCreateSheet({ visible, onClose, initialDate, lockedDate, editEvent }: Props) {
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
-  const slideAnim = useRef(new Animated.Value(600)).current;
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<any>(null);
   const dateScrollRef = useRef<any>(null);
 
   const { members, family } = useFamilyStore();
+  const { currentMemberRole } = useFamilyStore();
   const { createEvent, updateEvent, deleteEvent } = useEventsStore();
   const { timezone } = useSettingsStore();
   const { user } = useAuthStore();
@@ -92,18 +90,10 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const [eventType, setEventType] = useState<EventType>('activity');
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [recurrence, setRecurrence] = useState<'none' | 'weekly' | 'biweekly' | 'weekdays'>('none');
+  const [repeatOpen, setRepeatOpen] = useState(false);
+  const [isParentsOnly, setIsParentsOnly] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  // Track keyboard so we can remove safe-area bottom pad when keyboard is up
-  useEffect(() => {
-    const s1 = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
-    const s2 = Keyboard.addListener('keyboardDidShow',  () => setKeyboardVisible(true));
-    const h1 = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
-    const h2 = Keyboard.addListener('keyboardDidHide',  () => setKeyboardVisible(false));
-    return () => { s1.remove(); s2.remove(); h1.remove(); h2.remove(); };
-  }, []);
 
   // Reset selection to first date whenever the viewed week changes
   useEffect(() => {
@@ -125,6 +115,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       setSelectedMemberIds(editEvent.memberIds);
       const freq = (editEvent.recurrenceRule as RecurrenceRule | null)?.frequency;
       setRecurrence(freq ?? 'none');
+      setIsParentsOnly(editEvent.isParentsOnly ?? false);
     } else if (visible && !editEvent) {
       // Reset to defaults for new event
       setTitle('');
@@ -134,20 +125,12 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       setEventType('activity');
       setSelectedMemberIds([]);
       setRecurrence('none');
+      setRepeatOpen(false);
+      setIsParentsOnly(false);
     }
   }, [visible, editEvent?.eventId]);
 
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, bounciness: 3 }).start();
-    } else {
-      slideAnim.setValue(600);
-    }
-  }, [visible]);
-
-  const close = () => {
-    Animated.timing(slideAnim, { toValue: 600, duration: 200, useNativeDriver: true }).start(() => onClose());
-  };
+  const close = () => onClose();
 
   const toggleMember = (id: string) =>
     setSelectedMemberIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
@@ -213,6 +196,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           end_time_utc: end.toISOString(),
           member_ids: selectedMemberIds.length > 0 ? selectedMemberIds : members.map((m) => m.id),
           recurrence_rule: recurrenceRule as any,
+          is_parents_only: isParentsOnly,
         });
       } else {
         await createEvent({
@@ -225,6 +209,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           created_by: user?.id ?? '',
           member_ids: selectedMemberIds.length > 0 ? selectedMemberIds : members.map((m) => m.id),
           recurrence_rule: recurrenceRule as any,
+          is_parents_only: isParentsOnly,
         });
       }
       setTitle(''); setSelectedDateIdx(0); setStartHour(9); setStartMinute(0);
@@ -248,308 +233,342 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
-      <KeyboardAvoidingView
-        behavior="padding"
-        style={styles.kav}
-      >
-        <Pressable style={StyleSheet.absoluteFill} onPress={close} />
-        <Animated.View style={[styles.sheet, { paddingBottom: keyboardVisible ? 8 : insets.bottom + 8, transform: [{ translateY: slideAnim }] }]}>
-          {/* Handle + cancel */}
-          <View style={styles.sheetTopRow}>
-            <View style={styles.handle} />
-            <TouchableOpacity style={styles.cancelBtn} onPress={close}>
-              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
-            </TouchableOpacity>
-          </View>
+    <BottomSheet isOpen={visible} onOpenChange={(open) => { if (!open) close(); }}>
+      <BottomSheet.Portal>
+        <BottomSheet.Overlay />
+        <BottomSheet.Content
+          detached
+          bottomInset={insets.bottom + 12}
+          className="mx-3"
+          backgroundClassName="rounded-[28px]"
+          enablePanDownToClose
+          snapPoints={['65%']}
+        >
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.scrollContent}
+            >
+              {/* Title row */}
+              <View style={styles.sheetHeader}>
+                <Input
+                  ref={inputRef}
+                  style={styles.titleInput}
+                  placeholder={t('events.titlePlaceholder')}
+                  value={title}
+                  onChangeText={setTitle}
+                  autoCapitalize="sentences"
+                  returnKeyType="done"
+                  variant="ghost"
+                />
+                <BottomSheet.Close />
+              </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {/* Type chips */}
+              <View style={styles.typeRow}>
+                {EVENT_TYPES.map((type) => {
+                  const sel = eventType === type;
+                  return (
+                    <TouchableOpacity
+                      key={type}
+                      style={[styles.typeChip, sel && { backgroundColor: TYPE_META[type].dot }]}
+                      onPress={() => setEventType(type)}
+                    >
+                      <View style={[styles.typeDot, { backgroundColor: sel ? '#fff' : TYPE_META[type].dot }]} />
+                      <Text style={[styles.typeText, sel && styles.typeTextSel]}>
+                        {t(TYPE_META[type].labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-            {/* WHO */}
-            {members.length > 0 && (
-              <>
-                <Text style={styles.sectionLabel}>{t('events.sectionWho')}</Text>
-                <View style={styles.memberRow}>
-                  {members.map((m) => {
-                    const sel = selectedMemberIds.includes(m.id);
+              <View style={styles.divider} />
+
+              {/* PARENTS ONLY — only shown to parents */}
+              {currentMemberRole === 'parent' && (
+                <TouchableOpacity
+                  style={styles.parentsOnlyRow}
+                  onPress={() => setIsParentsOnly((v) => !v)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.parentsOnlyLeft}>
+                    <Text style={styles.parentsOnlyIcon}>🔒</Text>
+                    <View>
+                      <Text style={styles.parentsOnlyLabel}>{t('events.parentsOnly')}</Text>
+                      <Text style={styles.parentsOnlyHint}>{t('events.parentsOnlyHint')}</Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={isParentsOnly}
+                    onValueChange={setIsParentsOnly}
+                    trackColor={{ false: '#E5E5EA', true: '#2C2C2E' }}
+                    thumbColor="#fff"
+                  />
+                </TouchableOpacity>
+              )}
+
+              {/* WHO */}
+              {members.length > 0 && (
+                <>
+                  <Text style={styles.sectionLabel}>{t('events.sectionWho')}</Text>
+                  <View style={styles.memberRow}>
+                    {members.map((m) => {
+                      const sel = selectedMemberIds.includes(m.id);
+                      return (
+                        <TouchableOpacity
+                          key={m.id}
+                          style={[styles.avatar, { backgroundColor: sel ? m.color : '#F0F0EC', borderColor: m.color }]}
+                          onPress={() => toggleMember(m.id)}
+                        >
+                          <Text style={[styles.avatarInitial, { color: sel ? '#fff' : m.color }]}>
+                            {m.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <View style={styles.divider} />
+                </>
+              )}
+
+              {/* WHEN */}
+              <Text style={styles.sectionLabel}>{t('events.sectionWhen')}</Text>
+
+              {badgeDate ? (
+                <View style={styles.lockedDateBadge}>
+                  <Text style={styles.lockedDateDay}>
+                    {isActualToday(badgeDate)
+                      ? t('weeklyView.today')
+                      : new Intl.DateTimeFormat(i18n.language, { weekday: 'long' }).format(badgeDate)}
+                  </Text>
+                  <Text style={styles.lockedDateFull}>
+                    {new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(badgeDate)}
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView
+                  ref={dateScrollRef}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.dateRow}
+                >
+                  {dateStrip.map((day, idx) => {
+                    const sel = idx === selectedDateIdx;
+                    const showMonthLabel = idx === 0 || day.getMonth() !== dateStrip[idx - 1].getMonth();
+                    const dayLabel = isActualToday(day)
+                      ? t('weeklyView.today')
+                      : new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(day);
+                    return (
+                      <React.Fragment key={idx}>
+                        {showMonthLabel && (
+                          <View style={styles.monthLabel}>
+                            <Text style={styles.monthLabelText}>
+                              {new Intl.DateTimeFormat(i18n.language, { month: 'short' }).format(day).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                        <TouchableOpacity
+                          style={[styles.dateChip, sel && styles.dateChipSel]}
+                          onPress={() => setSelectedDateIdx(idx)}
+                        >
+                          <Text style={[styles.dateDay, sel && styles.dateTextSel]}>{dayLabel}</Text>
+                          <Text style={[styles.dateNum, sel && styles.dateTextSel]}>{day.getDate()}</Text>
+                        </TouchableOpacity>
+                      </React.Fragment>
+                    );
+                  })}
+                </ScrollView>
+              )}
+
+              {/* Time steppers */}
+              <View style={styles.timeRow}>
+                <View style={styles.timeStepper}>
+                  <TouchableOpacity style={styles.stepBtn} onPress={() => stepTime(-15)}>
+                    <Text style={styles.stepBtnText}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.timeLabel}>{startLabel}</Text>
+                  <TouchableOpacity style={styles.stepBtn} onPress={() => stepTime(15)}>
+                    <Text style={styles.stepBtnText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.timeArrow}>→</Text>
+                <View style={styles.timeStepper}>
+                  <TouchableOpacity style={styles.stepBtn} onPress={() => stepEndTime(-15)}>
+                    <Text style={styles.stepBtnText}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.timeLabel}>{endLabel}</Text>
+                  <TouchableOpacity style={styles.stepBtn} onPress={() => stepEndTime(15)}>
+                    <Text style={styles.stepBtnText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* REPEAT */}
+              <View style={styles.divider} />
+              <TouchableOpacity style={styles.repeatHeader} onPress={() => setRepeatOpen((v) => !v)} activeOpacity={0.7}>
+                <Text style={styles.sectionLabel}>{t('events.recurrenceLabel')}</Text>
+                <View style={styles.repeatHeaderRight}>
+                  {recurrence !== 'none' && !repeatOpen && (
+                    <View style={styles.repeatActiveDot} />
+                  )}
+                  <Text style={styles.repeatChevron}>{repeatOpen ? '▲' : '▼'}</Text>
+                </View>
+              </TouchableOpacity>
+              {repeatOpen && (
+                <View style={styles.recurrenceRow}>
+                  {(['none', 'weekly', 'biweekly', 'weekdays'] as const).map((opt) => {
+                    const sel = recurrence === opt;
+                    const labelKey = opt === 'none'
+                      ? 'events.recurrenceNone'
+                      : opt === 'weekly'
+                      ? 'events.recurrenceWeekly'
+                      : opt === 'biweekly'
+                      ? 'events.recurrenceBiweekly'
+                      : 'events.recurrenceWeekdays';
                     return (
                       <TouchableOpacity
-                        key={m.id}
-                        style={[styles.avatar, { backgroundColor: sel ? m.color : '#F0F0EC', borderColor: m.color }]}
-                        onPress={() => toggleMember(m.id)}
+                        key={opt}
+                        style={[styles.recurrenceChip, sel && styles.recurrenceChipSel]}
+                        onPress={() => { setRecurrence(opt); setRepeatOpen(false); }}
                       >
-                        <Text style={[styles.avatarInitial, { color: sel ? '#fff' : m.color }]}>
-                          {m.name.charAt(0).toUpperCase()}
-                        </Text>
-                        <Text style={[styles.avatarName, { color: sel ? '#fff' : '#6E6E7A' }]}>
-                          {m.name}
+                        <Text style={[styles.recurrenceChipText, sel && styles.recurrenceChipTextSel]}>
+                          {t(labelKey)}
                         </Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
-                <View style={styles.divider} />
-              </>
-            )}
+              )}
 
-            {/* WHAT */}
-            <Text style={styles.sectionLabel}>{t('events.sectionWhat')}</Text>
-            <TextInput
-              ref={inputRef}
-              style={styles.titleInput}
-              placeholder={t('events.titlePlaceholder')}
-              placeholderTextColor="#C0C0C8"
-              value={title}
-              onChangeText={setTitle}
-              autoCapitalize="sentences"
-              returnKeyType="done"
-            />
-            <View style={styles.typeRow}>
-              {EVENT_TYPES.map((type) => {
-                const sel = eventType === type;
-                return (
-                  <TouchableOpacity
-                    key={type}
-                    style={[styles.typeChip, sel && { backgroundColor: TYPE_META[type].dot }]}
-                    onPress={() => setEventType(type)}
+              {/* Actions */}
+              <View style={styles.actionRow}>
+                {editEvent && (
+                  <Button
+                    variant="ghost"
+                    style={styles.deleteHeroBtn}
+                    isDisabled={deleting}
+                    onPress={handleDelete}
                   >
-                    <View style={[styles.typeDot, { backgroundColor: sel ? '#fff' : TYPE_META[type].dot }]} />
-                    <Text style={[styles.typeText, sel && styles.typeTextSel]}>
-                      {t(TYPE_META[type].labelKey)}
+                    <Text style={styles.deleteBtnText}>
+                      {deleting ? '…' : t('events.deleteEvent')}
                     </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* WHEN */}
-            <Text style={styles.sectionLabel}>{t('events.sectionWhen')}</Text>
-
-            {badgeDate ? (
-              /* Locked to a specific day — show badge only */
-              <View style={styles.lockedDateBadge}>
-                <Text style={styles.lockedDateDay}>
-                  {isActualToday(badgeDate)
-                    ? t('weeklyView.today')
-                    : new Intl.DateTimeFormat(i18n.language, { weekday: 'long' }).format(badgeDate)}
-                </Text>
-                <Text style={styles.lockedDateFull}>
-                  {new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(badgeDate)}
-                </Text>
+                  </Button>
+                )}
+                <Button
+                  variant="primary"
+                  style={styles.saveHeroBtn}
+                  isDisabled={!title.trim() || saving}
+                  onPress={handleSave}
+                >
+                  {saving ? '…' : editEvent ? t('events.saveChanges') : t('events.save')}
+                </Button>
               </View>
-            ) : (
-              /* Full scrollable date strip */
-              <ScrollView
-                ref={dateScrollRef}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.dateRow}
-              >
-                {dateStrip.map((day, idx) => {
-                  const sel = idx === selectedDateIdx;
-                  const showMonthLabel = idx === 0 || day.getMonth() !== dateStrip[idx - 1].getMonth();
-                  const dayLabel = isActualToday(day)
-                    ? t('weeklyView.today')
-                    : new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(day);
-                  return (
-                    <React.Fragment key={idx}>
-                      {showMonthLabel && (
-                        <View style={styles.monthLabel}>
-                          <Text style={styles.monthLabelText}>
-                            {new Intl.DateTimeFormat(i18n.language, { month: 'short' }).format(day).toUpperCase()}
-                          </Text>
-                        </View>
-                      )}
-                      <TouchableOpacity
-                        style={[styles.dateChip, sel && styles.dateChipSel]}
-                        onPress={() => setSelectedDateIdx(idx)}
-                      >
-                        <Text style={[styles.dateDay, sel && styles.dateTextSel]}>{dayLabel}</Text>
-                        <Text style={[styles.dateNum, sel && styles.dateTextSel]}>{day.getDate()}</Text>
-                      </TouchableOpacity>
-                    </React.Fragment>
-                  );
-                })}
-              </ScrollView>
-            )}
 
-            {/* Time — from/to steppers */}
-            <View style={styles.timeRow}>
-              <View style={styles.timeStepper}>
-                <TouchableOpacity style={styles.stepBtn} onPress={() => stepTime(-15)}>
-                  <Text style={styles.stepBtnText}>−</Text>
-                </TouchableOpacity>
-                <Text style={styles.timeLabel}>{startLabel}</Text>
-                <TouchableOpacity style={styles.stepBtn} onPress={() => stepTime(15)}>
-                  <Text style={styles.stepBtnText}>+</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.timeArrow}>→</Text>
-              <View style={styles.timeStepper}>
-                <TouchableOpacity style={styles.stepBtn} onPress={() => stepEndTime(-15)}>
-                  <Text style={styles.stepBtnText}>−</Text>
-                </TouchableOpacity>
-                <Text style={styles.timeLabel}>{endLabel}</Text>
-                <TouchableOpacity style={styles.stepBtn} onPress={() => stepEndTime(15)}>
-                  <Text style={styles.stepBtnText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* REPEAT */}
-            <View style={styles.divider} />
-            <Text style={styles.sectionLabel}>{t('events.recurrenceLabel')}</Text>
-            <View style={styles.recurrenceRow}>
-              {(['none', 'weekly', 'biweekly', 'weekdays'] as const).map((opt) => {
-                const sel = recurrence === opt;
-                const labelKey = opt === 'none'
-                  ? 'events.recurrenceNone'
-                  : opt === 'weekly'
-                  ? 'events.recurrenceWeekly'
-                  : opt === 'biweekly'
-                  ? 'events.recurrenceBiweekly'
-                  : 'events.recurrenceWeekdays';
-                return (
-                  <TouchableOpacity
-                    key={opt}
-                    style={[styles.recurrenceChip, sel && styles.recurrenceChipSel]}
-                    onPress={() => setRecurrence(opt)}
-                  >
-                    <Text style={[styles.recurrenceChipText, sel && styles.recurrenceChipTextSel]}>
-                      {t(labelKey)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Save */}
-            <TouchableOpacity
-              style={[styles.saveBtn, (!title.trim() || saving) && styles.saveBtnOff]}
-              onPress={handleSave}
-              disabled={!title.trim() || saving}
-            >
-              <Text style={styles.saveBtnText}>
-                {saving ? '…' : editEvent ? t('events.saveChanges') : t('events.save')}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Delete — only in edit mode */}
-            {editEvent && (
-              <TouchableOpacity
-                style={[styles.deleteBtn, deleting && styles.saveBtnOff]}
-                onPress={handleDelete}
-                disabled={deleting}
-              >
-                <Text style={styles.deleteBtnText}>{deleting ? '…' : t('events.deleteEvent')}</Text>
-              </TouchableOpacity>
-            )}
-
-          </ScrollView>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Modal>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </BottomSheet.Content>
+      </BottomSheet.Portal>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.3)' },
-  kav: { flex: 1, justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    maxHeight: '88%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 14,
+  scrollContent: {
+    paddingHorizontal: 18,
+    paddingTop: 2,
+    paddingBottom: 16,
   },
-  sheetTopRow: { alignItems: 'center', paddingTop: 2, paddingBottom: 10 },
-  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: '#D8D8DC', marginBottom: 0 },
-  cancelBtn: { position: 'absolute', right: 0, top: 0, bottom: 0, justifyContent: 'center', paddingHorizontal: 4 },
-  cancelText: { fontSize: 15, color: '#9999A6' },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
+  },
+  titleInput: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2C2C2E',
+  },
 
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#9999A6',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  titleInput: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#2C2C2E',
-    paddingVertical: 10,
-    minHeight: 48,
-    marginBottom: 10,
+    marginTop: 8,
+    marginBottom: 4,
   },
 
-  divider: { height: 1, backgroundColor: '#EBEBEB', marginVertical: 12 },
+  divider: { height: 1, backgroundColor: '#EBEBEB', marginVertical: 6 },
 
   // Date
-  dateRow: { paddingBottom: 4, gap: 6, alignItems: 'flex-end' },
-  monthLabel: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 6, paddingHorizontal: 4 },
+  dateRow: { paddingBottom: 2, gap: 5, alignItems: 'flex-end' },
+  monthLabel: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4, paddingHorizontal: 3 },
   monthLabelText: { fontSize: 9, fontWeight: '800', color: '#AEAEB2', letterSpacing: 1, textTransform: 'uppercase' },
   lockedDateBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: '#2C2C2E',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    borderRadius: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
     alignSelf: 'flex-start',
     marginBottom: 4,
   },
   lockedDateDay: { fontSize: 13, fontWeight: '700', color: '#FAFAF8', textTransform: 'capitalize' },
   lockedDateFull: { fontSize: 13, color: 'rgba(255,255,255,0.55)' },
-  dateChip: { alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: '#F2F3F5', minWidth: 52 },
+  dateChip: { alignItems: 'center', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10, backgroundColor: '#F2F3F5', minWidth: 44 },
   dateChipSel: { backgroundColor: '#2C2C2E' },
-  dateDay: { fontSize: 10, fontWeight: '600', color: '#9999A6', textTransform: 'uppercase', letterSpacing: 0.4 },
-  dateNum: { fontSize: 20, fontWeight: '700', color: '#2C2C2E', lineHeight: 24 },
+  dateDay: { fontSize: 9, fontWeight: '600', color: '#9999A6', textTransform: 'uppercase', letterSpacing: 0.4 },
+  dateNum: { fontSize: 17, fontWeight: '700', color: '#2C2C2E', lineHeight: 22 },
   dateTextSel: { color: '#FAFAF8' },
 
-  // Time + Duration row
-  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, marginBottom: 4, gap: 8 },
-  timeStepper: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F3F5', borderRadius: 12, overflow: 'hidden' },
-  stepBtn: { paddingHorizontal: 14, paddingVertical: 10 },
-  stepBtnText: { fontSize: 20, color: '#2C2C2E', lineHeight: 24 },
-  timeLabel: { flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '700', color: '#2C2C2E', letterSpacing: 0.3 },
-  timeArrow: { fontSize: 16, color: '#AEAEB2', fontWeight: '400' },
+  // Time row
+  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, marginBottom: 2, gap: 8 },
+  timeStepper: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F3F5', borderRadius: 10, overflow: 'hidden' },
+  stepBtn: { paddingHorizontal: 12, paddingVertical: 7 },
+  stepBtnText: { fontSize: 18, color: '#2C2C2E', lineHeight: 22 },
+  timeLabel: { flex: 1, textAlign: 'center', fontSize: 14, fontWeight: '700', color: '#2C2C2E', letterSpacing: 0.3 },
+  timeArrow: { fontSize: 14, color: '#AEAEB2', fontWeight: '400' },
 
-  // Members
-  memberRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingVertical: 4 },
-  avatar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 2, gap: 6 },
+  // Parents-only toggle
+  parentsOnlyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
+  parentsOnlyLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  parentsOnlyIcon: { fontSize: 16 },
+  parentsOnlyLabel: { fontSize: 13, fontWeight: '600', color: '#2C2C2E' },
+  parentsOnlyHint: { fontSize: 11, color: '#9999A6', marginTop: 1 },
+
+  // Members — circles only
+  memberRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', paddingVertical: 2 },
+  avatar: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   avatarInitial: { fontSize: 14, fontWeight: '700' },
-  avatarName: { fontSize: 13, fontWeight: '500' },
 
   // Type
-  typeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingVertical: 4 },
-  typeChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F2F3F5', gap: 6 },
-  typeDot: { width: 8, height: 8, borderRadius: 4 },
-  typeText: { fontSize: 13, fontWeight: '500', color: '#2C2C2E' },
+  typeRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', paddingVertical: 2 },
+  typeChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, backgroundColor: '#F2F3F5', gap: 5 },
+  typeDot: { width: 7, height: 7, borderRadius: 4 },
+  typeText: { fontSize: 12, fontWeight: '500', color: '#2C2C2E' },
   typeTextSel: { color: '#fff' },
 
   // Recurrence
-  recurrenceRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingVertical: 4 },
-  recurrenceChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F2F3F5' },
+  repeatHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 2 },
+  repeatHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  repeatActiveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#5B9CF6' },
+  repeatChevron: { fontSize: 9, color: '#AEAEB2', marginBottom: 1 },
+  recurrenceRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', paddingVertical: 4 },
+  recurrenceChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, backgroundColor: '#F2F3F5' },
   recurrenceChipSel: { backgroundColor: '#2C2C2E' },
-  recurrenceChipText: { fontSize: 13, fontWeight: '500', color: '#2C2C2E' },
+  recurrenceChipText: { fontSize: 12, fontWeight: '500', color: '#2C2C2E' },
   recurrenceChipTextSel: { color: '#FAFAF8' },
 
-  // Save / Delete
-  saveBtn: { backgroundColor: '#2C2C2E', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 20, marginBottom: 8 },
-  saveBtnOff: { opacity: 0.35 },
-  saveBtnText: { color: '#FAFAF8', fontSize: 16, fontWeight: '600' },
-  deleteBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 4, marginBottom: 8 },
-  deleteBtnText: { color: '#F97B8B', fontSize: 15, fontWeight: '600' },
+  // Actions
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 4 },
+  saveHeroBtn: { flex: 1 },
+  deleteHeroBtn: { flex: 0 },
+  deleteBtnText: { color: '#F97B8B', fontSize: 14, fontWeight: '600' },
 });

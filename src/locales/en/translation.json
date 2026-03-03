@@ -94,7 +94,9 @@
     "deleteEvent": "Delete event",
     "sectionWho": "Who",
     "sectionWhat": "What",
-    "sectionWhen": "When"
+    "sectionWhen": "When",
+    "parentsOnly": "Parents only",
+    "parentsOnlyHint": "Hidden from children"
   },
   "settings": {
     "title": "Settings",

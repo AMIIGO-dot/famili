@@ -10,16 +10,14 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
-  Modal,
-  Pressable,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { BottomSheet, Button, TextField, Input, Label } from 'heroui-native';
 import { useFamilyStore } from '../../src/stores/familyStore';
 
 const COLORS = [
@@ -33,19 +31,20 @@ type DraftMember = { id?: string; name: string; color: string; role: 'parent' | 
 
 export default function FamilyScreen() {
   const { t } = useTranslation();
-  const { family, members, addMember, updateMember, deleteMember } = useFamilyStore();
+  const { family, members, addMember, updateMember, deleteMember, currentMemberRole } = useFamilyStore();
+  const insets = useSafeAreaInsets();
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<DraftMember | null>(null);
 
   const openAdd = () => {
     setEditing({ name: '', color: COLORS[members.length % COLORS.length], role: 'parent' });
-    setModalVisible(true);
+    setSheetOpen(true);
   };
 
   const openEdit = (m: typeof members[0]) => {
     setEditing({ id: m.id, name: m.name, color: m.color, role: m.role as 'parent' | 'child' });
-    setModalVisible(true);
+    setSheetOpen(true);
   };
 
   const handleSave = async () => {
@@ -90,7 +89,7 @@ export default function FamilyScreen() {
         });
       }
     }
-    setModalVisible(false);
+    setSheetOpen(false);
     setEditing(null);
   };
 
@@ -122,24 +121,31 @@ export default function FamilyScreen() {
       <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <TouchableOpacity style={styles.headerLeft} disabled>
           <Text style={styles.headerTitle}>
             {family?.name ?? 'Family'}
           </Text>
           <Text style={styles.headerSubtitle}>
             {members.length} {members.length === 1 ? t('onboarding.memberNameLabel') : t('settings.members')}
           </Text>
-        </View>
-        <TouchableOpacity style={styles.addIconBtn} onPress={openAdd} activeOpacity={0.75}>
-          <Ionicons name="person-add" size={18} color="#2C2C2E" />
         </TouchableOpacity>
+        {currentMemberRole === 'parent' && (
+          <TouchableOpacity style={styles.addIconBtn} onPress={openAdd} activeOpacity={0.75}>
+            <Ionicons name="person-add" size={18} color="#2C2C2E" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionLabel}>{t('settings.members', 'Members')}</Text>
 
         {members.map((m) => (
-          <TouchableOpacity key={m.id} style={styles.memberRow} onPress={() => openEdit(m)} activeOpacity={0.7}>
+          <TouchableOpacity
+            key={m.id}
+            style={styles.memberRow}
+            onPress={() => currentMemberRole === 'parent' && openEdit(m)}
+            activeOpacity={currentMemberRole === 'parent' ? 0.7 : 1}
+          >
             {/* Color avatar */}
             <View style={[styles.avatar, { backgroundColor: m.color }]}>
               <Text style={styles.avatarInitial}>{m.name.charAt(0).toUpperCase()}</Text>
@@ -153,95 +159,115 @@ export default function FamilyScreen() {
                   : t('onboarding.memberRoleChild')}
               </Text>
             </View>
-            {/* Edit hint */}
-            <Text style={styles.editHint}>›</Text>
-            {/* Delete */}
-            <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() => handleDelete(m.id, m.name)}
-              hitSlop={10}
-            >
-              <Text style={styles.deleteBtnText}>✕</Text>
-            </TouchableOpacity>
+            {/* Edit hint — parents only */}
+            {currentMemberRole === 'parent' && <Text style={styles.editHint}>›</Text>}
+            {/* Delete — parents only */}
+            {currentMemberRole === 'parent' && (
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={() => handleDelete(m.id, m.name)}
+                hitSlop={10}
+              >
+                <Text style={styles.deleteBtnText}>✕</Text>
+              </TouchableOpacity>
+            )}
           </TouchableOpacity>
         ))}
 
-        {/* Add member */}
-        <TouchableOpacity style={styles.addBtn} onPress={openAdd} activeOpacity={0.7}>
-          <Text style={styles.addBtnText}>{t('onboarding.addMember', '+ Add person')}</Text>
-        </TouchableOpacity>
+        {/* Add member — parents only */}
+        {currentMemberRole === 'parent' && (
+          <TouchableOpacity style={styles.addBtn} onPress={openAdd} activeOpacity={0.7}>
+            <Text style={styles.addBtnText}>{t('onboarding.addMember', '+ Add person')}</Text>
+          </TouchableOpacity>
+        )}
 
-        <View style={{ height: 60 }} />
+        <View style={{ height: 130 }} />
       </ScrollView>
 
-      {/* Add/Edit modal */}
-      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setModalVisible(false)} />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.kavWrap}
-          pointerEvents="box-none"
-        >
-          <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>
-            {editing?.id ? t('common.edit', 'Edit') : t('onboarding.addMember', 'Add person')}
-          </Text>
+      {/* Add/Edit BottomSheet */}
+      <BottomSheet isOpen={sheetOpen} onOpenChange={setSheetOpen}>
+        <BottomSheet.Portal>
+          <BottomSheet.Overlay />
+          <BottomSheet.Content
+            detached
+            bottomInset={insets.bottom + 16}
+            className="mx-4"
+            backgroundClassName="rounded-[28px]"
+            enablePanDownToClose
+          >
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+              <View style={styles.sheetInner}>
+                {/* Header */}
+                <View style={styles.sheetHeader}>
+                  <Text style={styles.sheetTitle}>
+                    {editing?.id ? t('common.edit', 'Edit person') : t('onboarding.addMember', 'Add person')}
+                  </Text>
+                  <BottomSheet.Close />
+                </View>
 
-          {/* Name */}
-          <TextInput
-            style={styles.nameInput}
-            placeholder={t('onboarding.memberNamePlaceholder', 'E.g. Emma')}
-            placeholderTextColor="#C0C0C8"
-            value={editing?.name ?? ''}
-            onChangeText={(v) => setEditing((e) => e ? { ...e, name: v } : e)}
-            autoFocus
-            autoCapitalize="words"
-          />
+                {/* Name field */}
+                <TextField isRequired style={styles.fieldWrap}>
+                  <Label>{t('onboarding.memberNameLabel', 'Name')}</Label>
+                  <Input
+                    placeholder={t('onboarding.memberNamePlaceholder', 'E.g. Emma')}
+                    value={editing?.name ?? ''}
+                    onChangeText={(v) => setEditing((e) => e ? { ...e, name: v } : e)}
+                    autoFocus
+                    autoCapitalize="words"
+                  />
+                </TextField>
 
-          {/* Role */}
-          <Text style={styles.fieldLabel}>{t('onboarding.memberColorLabel', 'Role')}</Text>
-          <View style={styles.roleRow}>
-            {(['parent', 'child'] as const).map((role) => (
-              <TouchableOpacity
-                key={role}
-                style={[styles.roleChip, editing?.role === role && styles.roleChipSel]}
-                onPress={() => setEditing((e) => e ? { ...e, role } : e)}
-              >
-                <Text style={[styles.roleChipText, editing?.role === role && styles.roleChipTextSel]}>
-                  {role === 'parent' ? t('onboarding.memberRoleParent') : t('onboarding.memberRoleChild')}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                {/* Role */}
+                <Text style={styles.fieldLabel}>{t('onboarding.memberColorLabel', 'Role')}</Text>
+                <View style={styles.roleRow}>
+                  {(['parent', 'child'] as const).map((role) => (
+                    <TouchableOpacity
+                      key={role}
+                      style={[styles.roleChip, editing?.role === role && styles.roleChipSel]}
+                      onPress={() => setEditing((e) => e ? { ...e, role } : e)}
+                    >
+                      <Text style={[styles.roleChipText, editing?.role === role && styles.roleChipTextSel]}>
+                        {role === 'parent' ? t('onboarding.memberRoleParent') : t('onboarding.memberRoleChild')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-          {/* Color picker */}
-          <Text style={styles.fieldLabel}>{t('onboarding.memberColorLabel', 'Color')}</Text>
-          <View style={styles.colorRow}>
-            {COLORS.map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[styles.colorSwatch, { backgroundColor: c }, editing?.color === c && styles.colorSwatchSel]}
-                onPress={() => setEditing((e) => e ? { ...e, color: c } : e)}
-              />
-            ))}
-          </View>
+                {/* Color picker */}
+                <Text style={styles.fieldLabel}>{t('onboarding.memberColorLabel', 'Color')}</Text>
+                <View style={styles.colorRow}>
+                  {COLORS.map((c) => (
+                    <TouchableOpacity
+                      key={c}
+                      style={[styles.colorSwatch, { backgroundColor: c }, editing?.color === c && styles.colorSwatchSel]}
+                      onPress={() => setEditing((e) => e ? { ...e, color: c } : e)}
+                    />
+                  ))}
+                </View>
 
-          {/* Buttons */}
-          <View style={styles.modalBtns}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
-              <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.saveBtn, !editing?.name.trim() && styles.saveBtnOff]}
-              onPress={handleSave}
-              disabled={!editing?.name.trim()}
-            >
-              <Text style={styles.saveBtnText}>{t('common.save')}</Text>
-            </TouchableOpacity>
-          </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+                {/* Buttons */}
+                <View style={styles.sheetBtns}>
+                  <Button
+                    variant="secondary"
+                    style={styles.btnFlex}
+                    onPress={() => setSheetOpen(false)}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    style={styles.btnFlex}
+                    isDisabled={!editing?.name.trim()}
+                    onPress={handleSave}
+                  >
+                    {t('common.save')}
+                  </Button>
+                </View>
+              </View>
+            </KeyboardAvoidingView>
+          </BottomSheet.Content>
+        </BottomSheet.Portal>
+      </BottomSheet>
       </View>
     </SafeAreaView>
   );
@@ -355,26 +381,33 @@ const styles = StyleSheet.create({
   },
   addBtnText: { fontSize: 14, fontWeight: '600', color: '#9999A6' },
 
-  // Modal
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  kavWrap: { flex: 1, justifyContent: 'flex-end' },
-  modalCard: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+  // Sheet
+  sheetInner: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 24,
+    gap: 4,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#2C2C2E', marginBottom: 20 },
-  nameInput: {
-    fontSize: 17,
-    backgroundColor: '#F2F3F5',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: '#2C2C2E',
-    marginBottom: 20,
   },
+  fieldWrap: {
+    marginBottom: 16,
+  },
+  sheetBtns: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 24,
+  },
+  btnFlex: { flex: 1 },
   fieldLabel: {
     fontSize: 11,
     fontWeight: '700',
@@ -397,22 +430,5 @@ const styles = StyleSheet.create({
   colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginBottom: 24 },
   colorSwatch: { width: 32, height: 32, borderRadius: 16 },
   colorSwatchSel: { borderWidth: 3, borderColor: '#2C2C2E' },
-  modalBtns: { flexDirection: 'row', gap: 10 },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    backgroundColor: '#F2F3F5',
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#6E6E7A' },
-  saveBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    backgroundColor: '#2C2C2E',
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  saveBtnOff: { opacity: 0.35 },
-  saveBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+
 });

@@ -28,6 +28,7 @@ export interface EventOccurrence {
   memberIds: string[];
   color?: string;
   isRecurring: boolean;
+  isParentsOnly: boolean;
   recurrenceRule?: Event['recurrence_rule'];
 }
 
@@ -37,7 +38,7 @@ interface EventsState {
 
   // Actions
   fetchEventsForWeek: (familyId: string, rangeStart: Date, rangeEnd: Date) => Promise<void>;
-  getOccurrencesForRange: (rangeStart: Date, rangeEnd: Date) => EventOccurrence[];
+  getOccurrencesForRange: (rangeStart: Date, rangeEnd: Date, role?: 'parent' | 'child') => EventOccurrence[];
   createEvent: (event: EventInsert) => Promise<Event | null>;
   updateEvent: (id: string, updates: EventUpdate) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
@@ -73,8 +74,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
             start_time_utc: base.toISOString(),
             end_time_utc: new Date(base.getTime() + 60 * 60 * 1000).toISOString(),
             member_ids: ['dev-member-1', 'dev-member-2', 'dev-member-3'],
-            recurrence_rule: null,
-            created_at: new Date().toISOString(),
+            recurrence_rule: null,            is_parents_only: false,            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
           {
@@ -86,6 +86,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
             end_time_utc: new Date(tomorrow.getTime() + 90 * 60 * 1000).toISOString(),
             member_ids: ['dev-member-3'],
             recurrence_rule: null,
+            is_parents_only: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -130,13 +131,17 @@ export const useEventsStore = create<EventsState>((set, get) => ({
 
   /**
    * Returns merged + sorted occurrences for a given range.
+   * Pass role='child' to exclude parents-only events.
    * Recurring events are expanded in memory — never duplicated in the DB.
    */
-  getOccurrencesForRange: (rangeStart, rangeEnd) => {
+  getOccurrencesForRange: (rangeStart, rangeEnd, role = 'parent') => {
     const { events } = get();
     const occurrences: EventOccurrence[] = [];
 
     for (const event of events) {
+      // Hide parents-only events from children
+      if (role === 'child' && event.is_parents_only) continue;
+
       if (!event.recurrence_rule) {
         // One-time event
         const start = new Date(event.start_time_utc);
@@ -150,6 +155,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
             type: event.type,
             memberIds: event.member_ids ?? [],
             isRecurring: false,
+            isParentsOnly: event.is_parents_only ?? false,
             recurrenceRule: null,
           });
         }
@@ -172,6 +178,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
             type: event.type,
             memberIds: event.member_ids ?? [],
             isRecurring: true,
+            isParentsOnly: event.is_parents_only ?? false,
             recurrenceRule: event.recurrence_rule,
           });
         }

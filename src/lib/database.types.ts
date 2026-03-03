@@ -86,6 +86,7 @@ export type Database = {
           name: string;
           color: string;
           role: MemberRole;
+          user_id: string | null; // Supabase auth UID — null until the member creates an account
         };
         Insert: {
           id?: string;
@@ -93,6 +94,7 @@ export type Database = {
           name: string;
           color: string;
           role: MemberRole;
+          user_id?: string | null;
         };
         Update: {
           id?: string;
@@ -100,6 +102,7 @@ export type Database = {
           name?: string;
           color?: string;
           role?: MemberRole;
+          user_id?: string | null;
         };
         Relationships: [];
       };
@@ -115,6 +118,7 @@ export type Database = {
           recurrence_rule: RecurrenceRule | null;
           member_ids: string[];
           reminder_minutes: number | null;
+          is_parents_only: boolean; // Hidden from children
           created_by: string;
           created_at: string;
         };
@@ -129,6 +133,7 @@ export type Database = {
           recurrence_rule?: RecurrenceRule | null;
           member_ids?: string[];
           reminder_minutes?: number | null;
+          is_parents_only?: boolean;
           created_by: string;
           created_at?: string;
         };
@@ -143,6 +148,7 @@ export type Database = {
           recurrence_rule?: RecurrenceRule | null;
           member_ids?: string[];
           reminder_minutes?: number | null;
+          is_parents_only?: boolean;
         };
         Relationships: [];
       };

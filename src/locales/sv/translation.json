@@ -94,7 +94,9 @@
     "deleteEvent": "Ta bort händelse",
     "sectionWho": "Vem",
     "sectionWhat": "Vad",
-    "sectionWhen": "När"
+    "sectionWhen": "När",
+    "parentsOnly": "Endast föräldrar",
+    "parentsOnlyHint": "Dold för barn"
   },
   "settings": {
     "title": "Inställningar",

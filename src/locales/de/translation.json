@@ -94,7 +94,9 @@
     "deleteEvent": "Termin löschen",
     "sectionWho": "Wer",
     "sectionWhat": "Was",
-    "sectionWhen": "Wann"
+    "sectionWhen": "Wann",
+    "parentsOnly": "Nur für Eltern",
+    "parentsOnlyHint": "Für Kinder verborgen"
   },
   "settings": {
     "title": "Einstellungen",

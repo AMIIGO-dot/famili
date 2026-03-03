@@ -41,7 +41,7 @@ export default function WeeklyViewScreen() {
   const [pressedEvent, setPressedEvent] = useState<EventOccurrence | undefined>(undefined);
 
   const { user } = useAuthStore();
-  const { family, members } = useFamilyStore();
+  const { family, members, currentMemberRole } = useFamilyStore();
   const { timezone, weekStartsOn, timeFormat } = useSettingsStore();
   const { fetchEventsForWeek, getOccurrencesForRange, isLoading } = useEventsStore();
 
@@ -54,7 +54,7 @@ export default function WeeklyViewScreen() {
     }
   }, [family, weekOffset]);
 
-  const allOccurrences = getOccurrencesForRange(weekRange.start, weekRange.end);
+  const allOccurrences = getOccurrencesForRange(weekRange.start, weekRange.end, currentMemberRole);
 
   // Filter occurrences by selected member
   const occurrences =
@@ -194,7 +194,10 @@ export default function WeeklyViewScreen() {
                 key={idx}
                 activeOpacity={1}
                 delayLongPress={350}
-                onLongPress={() => { setPressedDate(day); setPressedEvent(undefined); setSheetVisible(true); }}
+                onLongPress={() => {
+                  if (currentMemberRole !== 'parent') return;
+                  setPressedDate(day); setPressedEvent(undefined); setSheetVisible(true);
+                }}
                 style={[
                   styles.dayRow,
                   today_ && styles.dayRowToday,
@@ -224,15 +227,23 @@ export default function WeeklyViewScreen() {
                     return (
                       <TouchableOpacity
                         key={eIdx}
-                        activeOpacity={0.75}
-                        onPress={() => { setPressedEvent(evt); setSheetVisible(true); }}
+                        activeOpacity={currentMemberRole === 'parent' ? 0.75 : 1}
+                        onPress={() => {
+                          if (currentMemberRole !== 'parent') return;
+                          setPressedEvent(evt); setSheetVisible(true);
+                        }}
                         style={styles.eventCard}
                       >
                         <View style={[styles.eventAccent, { backgroundColor: accentColor }]} />
                         <View style={styles.eventBody}>
                           <View style={styles.eventRow}>
                             <Text style={styles.eventTitle} numberOfLines={1}>{evt.title}</Text>
-                            <Text style={styles.eventTime}>{timeStr}</Text>
+                            <View style={styles.eventTimeRow}>
+                              {evt.isParentsOnly && (
+                                <Text style={styles.lockIcon}>🔒</Text>
+                              )}
+                              <Text style={styles.eventTime}>{timeStr}</Text>
+                            </View>
                           </View>
                           {assignedMembers.length > 0 && (
                             <View style={styles.memberDots}>
@@ -257,10 +268,12 @@ export default function WeeklyViewScreen() {
         <View style={{ height: 140 }} />
       </ScrollView>
 
-      {/* ── FAB ── */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={() => { setPressedDate(undefined); setPressedEvent(undefined); setSheetVisible(true); }}>
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+      {/* —— FAB —— only parents can create events */}
+      {currentMemberRole === 'parent' && (
+        <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPress={() => { setPressedDate(undefined); setPressedEvent(undefined); setSheetVisible(true); }}>
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
+      )}
 
       <EventCreateSheet
         visible={sheetVisible}
@@ -411,7 +424,9 @@ const styles = StyleSheet.create({
   eventBody: { flex: 1, paddingHorizontal: 10, paddingVertical: 7 },
   eventRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   eventTitle: { fontSize: 13, fontWeight: '600', color: '#2C2C2E', flex: 1 },
-  eventTime: { fontSize: 11, color: '#9999A6', marginLeft: 6 },
+  eventTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 6 },
+  lockIcon: { fontSize: 10 },
+  eventTime: { fontSize: 11, color: '#9999A6' },
   memberDots: { flexDirection: 'row', gap: 4, marginTop: 5 },
   memberDot: {
     width: 18,
