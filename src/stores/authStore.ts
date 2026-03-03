@@ -12,7 +12,7 @@ import type { Database } from '../lib/database.types';
 // ─── DEV BYPASS ───────────────────────────────────────────────────────────────
 // Set to true to skip authentication entirely during development.
 // Remove before releasing to production.
-const DEV_BYPASS = false;
+const DEV_BYPASS = true;
 const DEV_FAKE_USER: User = {
   id: 'dev-user-id',
   email: 'dev@familj.app',

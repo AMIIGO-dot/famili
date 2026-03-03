@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
 // Keep in sync with authStore.ts
-const DEV_BYPASS = false;
+const DEV_BYPASS = true;
 
 type Family = Database['public']['Tables']['families']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
@@ -45,6 +45,18 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   fetchFamily: async (userId: string) => {
+    if (DEV_BYPASS) {
+      set({
+        family: { id: 'dev-family-id', name: 'Dev Family', owner_id: 'dev-user-id', created_at: new Date().toISOString() } as any,
+        members: [
+          { id: 'dev-member-1', family_id: 'dev-family-id', name: 'Simon', color: '#FF6B6B', avatar_url: null, created_at: new Date().toISOString() } as any,
+          { id: 'dev-member-2', family_id: 'dev-family-id', name: 'Emma', color: '#4ECDC4', avatar_url: null, created_at: new Date().toISOString() } as any,
+          { id: 'dev-member-3', family_id: 'dev-family-id', name: 'Liam', color: '#45B7D1', avatar_url: null, created_at: new Date().toISOString() } as any,
+        ],
+        isLoading: false,
+      });
+      return;
+    }
     set({ isLoading: true });
     try {
       // maybeSingle() returns null (not an error) when the user has no family yet
@@ -81,6 +93,10 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   fetchSubscription: async (userId: string) => {
+    if (DEV_BYPASS) {
+      set({ subscription: null }); // free plan in dev
+      return;
+    }
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')

@@ -88,6 +88,13 @@ export default function OnboardingScreen() {
 
     setSaving(true);
     try {
+      // DEV_BYPASS: fake user has no real UUID — skip Supabase and go straight to tabs
+      if (user?.id === 'dev-user-id') {
+        await setLanguage(selectedLang);
+        router.replace('/(tabs)');
+        return;
+      }
+
       const { supabase } = await import('../src/lib/supabase');
 
       if (!user) throw new Error('Not logged in');
