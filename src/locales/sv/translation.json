@@ -49,7 +49,12 @@
     "greetingEvening": "God kväll",
     "noEvents": "Lugnt idag",
     "noEventsHint": "Tryck + för att lägga till en aktivitet.",
-    "ongoing": "Pågår nu"
+    "ongoing": "Pågår nu",
+    "heroPhrase1": "Det här är din dag",
+    "heroPhrase2": "Din familjedag",
+    "heroPhrase3": "Tillsammans är bättre",
+    "heroPhrase4": "Ha en fantastisk dag",
+    "seeWeek": "Se familjeveckan"
   },
   "weeklyView": {
     "title": "Den här veckan",

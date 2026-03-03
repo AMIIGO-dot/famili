@@ -370,20 +370,19 @@ export default function FamilyScreen() {
                     </TextField>
                     <View style={styles.sheetBtns}>
                       <Button
-                        variant="secondary"
-                        style={styles.btnFlex}
-                        onPress={() => setParentInviteOpen(false)}
-                      >
-                        {t('common.cancel')}
-                      </Button>
-                      <Button
                         variant="primary"
-                        style={styles.btnFlex}
+                        style={styles.btnFull}
                         isDisabled={!parentInviteEmail.trim() || parentInviteSending}
                         onPress={handleSendParentInvite}
                       >
                         {parentInviteSending ? t('common.loading') : t('parentInvite.send')}
                       </Button>
+                      <TouchableOpacity
+                        style={styles.cancelLink}
+                        onPress={() => setParentInviteOpen(false)}
+                      >
+                        <Text style={styles.cancelLinkText}>{t('common.cancel')}</Text>
+                      </TouchableOpacity>
                     </View>
                   </>
                 )}
@@ -536,11 +535,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sheetBtns: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 24,
+    flexDirection: 'column',
+    gap: 0,
+    marginTop: 16,
   },
+  btnFull: { width: '100%' },
   btnFlex: { flex: 1 },
+  cancelLink: { alignItems: 'center', paddingVertical: 12 },
+  cancelLinkText: { fontSize: 13, color: '#9999A6' },
   fieldLabel: {
     fontSize: 11,
     fontWeight: '700',

@@ -49,7 +49,12 @@
     "greetingEvening": "Good evening",
     "noEvents": "Nothing planned today",
     "noEventsHint": "Tap + to add an activity for today.",
-    "ongoing": "Now"
+    "ongoing": "Now",
+    "heroPhrase1": "This is your day",
+    "heroPhrase2": "Your family's day",
+    "heroPhrase3": "Together is better",
+    "heroPhrase4": "Make it a great day",
+    "seeWeek": "See family week"
   },
   "weeklyView": {
     "title": "This Week",

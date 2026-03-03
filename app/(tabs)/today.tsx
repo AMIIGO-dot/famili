@@ -1,12 +1,14 @@
 /**
  * FAMILJ – Min dag (My Day) Screen
  *
- * A beautiful day-at-a-glance view for the whole family.
- * Shows all events for today with rich cards: who, what, when.
+ * Hero card with animated blob background + cycling phrases.
+ * Smooth scroll collapse. Events list below.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +19,7 @@ import { Card } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useFamilyStore } from '../../src/stores/familyStore';
 import { useEventsStore, EventOccurrence } from '../../src/stores/eventStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
@@ -40,18 +43,193 @@ const TYPE_BG: Record<string, string> = {
   other:    '#F5F5F6',
 };
 
-function getGreeting(hour: number, t: (k: string) => string): string {
-  if (hour < 10) return t('today.greetingMorning');
-  if (hour < 13) return t('today.greetingDay');
-  if (hour < 18) return t('today.greetingAfternoon');
-  return t('today.greetingEvening');
+const HERO_PHRASE_KEYS = [
+  'today.heroPhrase1',
+  'today.heroPhrase2',
+  'today.heroPhrase3',
+  'today.heroPhrase4',
+];
+
+// ─── Floating particle: drifts upward and fades ──────────────────────────────
+function useParticle(durationMs: number, delayMs: number) {
+  const y       = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const run = () => {
+      y.setValue(0); opacity.setValue(0);
+      Animated.sequence([
+        Animated.delay(delayMs),
+        Animated.parallel([
+          Animated.timing(y, { toValue: -120, duration: durationMs, useNativeDriver: true, easing: Easing.out(Easing.quad) }),
+          Animated.sequence([
+            Animated.timing(opacity, { toValue: 0.65, duration: durationMs * 0.18, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0,    duration: durationMs * 0.82, useNativeDriver: true }),
+          ]),
+        ]),
+      ]).start(() => run());
+    };
+    run();
+  }, []);
+  return { y, opacity };
+}
+
+// ─── Organic blob: translate + scale + rotate ─────────────────────────────────
+function useOscillate(a: number, b: number, duration: number, delay = 0) {
+  const val = useRef(new Animated.Value(a)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(val, { toValue: b, duration, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
+        Animated.timing(val, { toValue: a, duration, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+  return val;
+}
+
+function HeroBackground() {
+  // Blobs — green family
+  const b1tx = useOscillate(-12, 26, 9000);
+  const b1ty = useOscillate(-18, 14, 11000, 500);
+  const b1s  = useOscillate(1.0, 1.18, 8000, 200);
+  const b1r  = useOscillate(-8, 12, 13000);
+
+  const b2tx = useOscillate(16, -22, 8500, 1000);
+  const b2ty = useOscillate(20, -16, 9500);
+  const b2s  = useOscillate(1.0, 1.14, 7000, 800);
+  const b2r  = useOscillate(5, -15, 11500, 300);
+
+  const b3tx = useOscillate(-20, 18, 10500, 600);
+  const b3ty = useOscillate(14, -22, 8000, 1200);
+  const b3s  = useOscillate(0.95, 1.15, 9500, 400);
+  const b3r  = useOscillate(0, 20, 12000, 700);
+
+  const b4tx = useOscillate(10, -16, 7500, 1500);
+  const b4ty = useOscillate(-10, 18, 9000, 200);
+  const b4s  = useOscillate(0.9, 1.12, 6500, 1000);
+
+  const b5tx = useOscillate(-8, 8, 14000);
+  const b5ty = useOscillate(-6, 10, 16000, 800);
+
+  // Sheen — diagonal white sweep every 7s
+  const sheenX = useRef(new Animated.Value(-120)).current;
+  useEffect(() => {
+    const sweep = () =>
+      Animated.sequence([
+        Animated.timing(sheenX, { toValue: 480, duration: 1600, useNativeDriver: true, easing: Easing.inOut(Easing.quad) }),
+        Animated.delay(5400),
+        Animated.timing(sheenX, { toValue: -120, duration: 0, useNativeDriver: true }),
+      ]);
+    const loop = Animated.loop(sweep());
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  // Particles
+  const p1 = useParticle(3800,    0);
+  const p2 = useParticle(4400, 1400);
+  const p3 = useParticle(3500, 2800);
+  const p4 = useParticle(5000,  700);
+  const p5 = useParticle(4100, 3600);
+  const p6 = useParticle(3700, 2100);
+  const PARTICLES = [
+    { p: p1, left:  36, bottom: 62, size: 5 },
+    { p: p2, left:  92, bottom: 34, size: 3 },
+    { p: p3, left: 158, bottom: 78, size: 7 },
+    { p: p4, left: 224, bottom: 48, size: 4 },
+    { p: p5, left: 298, bottom: 68, size: 6 },
+    { p: p6, left: 352, bottom: 38, size: 4 },
+  ];
+
+  return (
+    <>
+      {/* Deep-green base wash */}
+      <Animated.View style={[styles.blob, styles.blob5, {
+        transform: [{ translateX: b5tx }, { translateY: b5ty }],
+      }]} />
+      {/* Layered organic blobs */}
+      <Animated.View style={[styles.blob, styles.blob1, {
+        transform: [{ translateX: b1tx }, { translateY: b1ty }, { scale: b1s }, { rotate: b1r.interpolate({ inputRange: [-20, 20], outputRange: ['-20deg', '20deg'] }) }],
+      }]} />
+      <Animated.View style={[styles.blob, styles.blob2, {
+        transform: [{ translateX: b2tx }, { translateY: b2ty }, { scale: b2s }, { rotate: b2r.interpolate({ inputRange: [-20, 20], outputRange: ['-20deg', '20deg'] }) }],
+      }]} />
+      <Animated.View style={[styles.blob, styles.blob3, {
+        transform: [{ translateX: b3tx }, { translateY: b3ty }, { scale: b3s }, { rotate: b3r.interpolate({ inputRange: [-20, 20], outputRange: ['-20deg', '20deg'] }) }],
+      }]} />
+      <Animated.View style={[styles.blob, styles.blob4, {
+        transform: [{ translateX: b4tx }, { translateY: b4ty }, { scale: b4s }],
+      }]} />
+      {/* Soft white frost */}
+      <View style={styles.heroFrost} />
+      {/* Diagonal sheen */}
+      <Animated.View style={[styles.sheen, { transform: [{ translateX: sheenX }] }]} />
+      {/* Floating particles */}
+      {PARTICLES.map(({ p, left, bottom, size }, i) => (
+        <Animated.View key={i} style={{
+          position: 'absolute', left, bottom,
+          width: size, height: size, borderRadius: size / 2,
+          backgroundColor: '#fff',
+          opacity: p.opacity,
+          transform: [{ translateY: p.y }],
+        }} />
+      ))}
+    </>
+  );
 }
 
 export default function TodayScreen() {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const [sheetVisible, setSheetVisible] = useState(false);
   const [pressedEvent, setPressedEvent] = useState<EventOccurrence | undefined>(undefined);
   const [selectedMemberId, setSelectedMemberId] = useState<string>(ALL_ID);
+
+  // ── Staggered entrance animations ──────────────────────────────────────
+  const brandEntrance   = useRef(new Animated.Value(0)).current;
+  const phraseEntrance  = useRef(new Animated.Value(0)).current;
+  const dateEntrance    = useRef(new Animated.Value(0)).current;
+  const btnEntrance     = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.stagger(130, [
+      Animated.spring(brandEntrance,  { toValue: 1, useNativeDriver: true, tension: 80, friction: 12 }),
+      Animated.spring(phraseEntrance, { toValue: 1, useNativeDriver: true, tension: 70, friction: 10 }),
+      Animated.spring(dateEntrance,   { toValue: 1, useNativeDriver: true, tension: 80, friction: 12 }),
+      Animated.spring(btnEntrance,    { toValue: 1, useNativeDriver: true, tension: 90, friction: 11 }),
+    ]).start();
+  }, []);
+
+  // ── Phrase cycling: slide-up + fade ──────────────────────────────────────
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const phraseIdxRef = useRef(0);
+  const phraseOpacity = useRef(new Animated.Value(1)).current;
+  const phraseTransY  = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const cycle = () => {
+      // slide up + fade out
+      Animated.parallel([
+        Animated.timing(phraseOpacity, { toValue: 0, duration: 450, useNativeDriver: true, easing: Easing.out(Easing.quad) }),
+        Animated.timing(phraseTransY,  { toValue: -16, duration: 450, useNativeDriver: true, easing: Easing.out(Easing.quad) }),
+      ]).start(() => {
+        phraseIdxRef.current = (phraseIdxRef.current + 1) % HERO_PHRASE_KEYS.length;
+        setPhraseIdx(phraseIdxRef.current);
+        // reset below
+        phraseTransY.setValue(20);
+        // slide up into place + fade in
+        Animated.parallel([
+          Animated.timing(phraseOpacity, { toValue: 1, duration: 550, useNativeDriver: true, easing: Easing.out(Easing.quad) }),
+          Animated.timing(phraseTransY,  { toValue: 0, duration: 550, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+        ]).start();
+      });
+    };
+    const id = setInterval(cycle, 4500);
+    return () => clearInterval(id);
+  }, []);
 
   const { family, members } = useFamilyStore();
   const { fetchEventsForWeek, getOccurrencesForRange } = useEventsStore();
@@ -97,8 +275,6 @@ export default function TodayScreen() {
     return m > 0 ? `${h}h ${m}min` : `${h}h`;
   };
 
-  const greeting = getGreeting(today.getHours(), t);
-
   const fullDateLabel = new Intl.DateTimeFormat(i18n.language, {
     weekday: 'long',
     day: 'numeric',
@@ -117,64 +293,95 @@ export default function TodayScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>{t('today.title')}</Text>
-          <Text style={styles.headerSubtitle}>{fullDateLabel}</Text>
-        </View>
-        {occurrences.length > 0 && (
-          <View style={styles.eventCountBadge}>
-            <Text style={styles.eventCountNum}>{occurrences.length}</Text>
-            <Ionicons name="calendar" size={13} color="#5B9CF6" />
-          </View>
-        )}
-      </View>
-
-      {/* ── Member filter ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterBar}
-        contentContainerStyle={styles.filterContent}
+      <Animated.ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        scrollEventThrottle={16}
       >
-        <TouchableOpacity
-          style={[styles.filterChip, selectedMemberId === ALL_ID && styles.filterChipAllSel]}
-          onPress={() => setSelectedMemberId(ALL_ID)}
-        >
-          <Text style={[styles.filterChipText, selectedMemberId === ALL_ID && styles.filterChipTextSel]}>
-            {t('weeklyView.all')}
-          </Text>
-        </TouchableOpacity>
-        {members.map((m) => {
-          const sel = selectedMemberId === m.id;
-          return (
-            <TouchableOpacity
-              key={m.id}
-              style={[styles.filterChip, { borderColor: m.color }, sel && { backgroundColor: m.color }]}
-              onPress={() => setSelectedMemberId(sel ? ALL_ID : m.id)}
-            >
-              <View style={[styles.filterAvatar, { backgroundColor: sel ? 'rgba(255,255,255,0.35)' : m.color }]}>
-                <Text style={styles.filterAvatarText}>{m.name.charAt(0).toUpperCase()}</Text>
-              </View>
-              <Text style={[styles.filterChipText, sel && styles.filterChipTextSel]}>{m.name}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+        {/* ── HERO ── */}
+        <View style={styles.hero}>
+          <HeroBackground />
+          <View style={styles.heroContent}>
+            <Animated.Text style={[styles.heroBrand, {
+              opacity: brandEntrance,
+              transform: [{ translateX: brandEntrance.interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) }],
+            }]}>
+              {family?.name ? family.name.toUpperCase() : 'FAMILJ'}
+            </Animated.Text>
+            <Animated.Text style={[styles.heroPhrase, {
+              opacity: Animated.multiply(phraseOpacity, phraseEntrance),
+              transform: [
+                { translateY: phraseTransY },
+                { translateY: phraseEntrance.interpolate({ inputRange: [0, 1], outputRange: [28, 0] }) },
+              ],
+            }]}>
+              {t(HERO_PHRASE_KEYS[phraseIdx])}
+            </Animated.Text>
+            <Animated.Text style={[styles.heroDate, {
+              opacity: dateEntrance,
+              transform: [{ translateY: dateEntrance.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+            }]}>{fullDateLabel}</Animated.Text>
+            <Animated.View style={[{
+              opacity: btnEntrance,
+              transform: [{ scale: btnEntrance.interpolate({ inputRange: [0, 1], outputRange: [0.82, 1] }) }],
+              alignSelf: 'flex-start',
+            }]}>
+              <TouchableOpacity
+                style={styles.heroBtn}
+                activeOpacity={0.8}
+                onPress={() => router.navigate('/')}
+              >
+                <Ionicons name="calendar-outline" size={15} color="#1A6E46" />
+                <Text style={styles.heroBtnText}>{t('today.seeWeek')}</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </View>
 
-      {/* ── Event list ── */}
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {occurrences.length === 0 ? (
-          /* Empty state */
-          <View style={styles.emptyWrap}>
+        {/* ── Member filter ── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterBar}
+          contentContainerStyle={styles.filterContent}
+          nestedScrollEnabled
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, selectedMemberId === ALL_ID && styles.filterChipAllSel]}
+            onPress={() => setSelectedMemberId(ALL_ID)}
+          >
+            <Text style={[styles.filterChipText, selectedMemberId === ALL_ID && styles.filterChipTextSel]}>
+              {t('weeklyView.all')}
+            </Text>
+          </TouchableOpacity>
+          {members.map((m) => {
+            const sel = selectedMemberId === m.id;
+            return (
+              <TouchableOpacity
+                key={m.id}
+                style={[styles.filterChip, { borderColor: m.color }, sel && { backgroundColor: m.color }]}
+                onPress={() => setSelectedMemberId(sel ? ALL_ID : m.id)}
+              >
+                <View style={[styles.filterAvatar, { backgroundColor: sel ? 'rgba(255,255,255,0.35)' : m.color }]}>
+                  <Text style={styles.filterAvatarText}>{m.name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <Text style={[styles.filterChipText, sel && styles.filterChipTextSel]}>{m.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* ── Event list ── */}
+        <View style={styles.eventList}>
+          {occurrences.length === 0 ? (
+            /* Empty state */
+            <View style={styles.emptyWrap}>
             <Text style={styles.emptyIcon}>☀</Text>
             <Text style={styles.emptyTitle}>{t('today.noEvents')}</Text>
             <Text style={styles.emptyHint}>{t('today.noEventsHint')}</Text>
           </View>
-        ) : (
-          occurrences.map((occ, idx) => {
+          ) : (
+            occurrences.map((occ, idx) => {
             const localStart  = convertUTCToLocal(occ.start, timezone);
             const localEnd    = convertUTCToLocal(occ.end,   timezone);
             const startStr    = formatTime(occ.start, timezone, timeFormat === '12h');
@@ -187,9 +394,9 @@ export default function TodayScreen() {
 
             // Show a time-of-day marker if first event or gap to previous
             const prevEnd = idx > 0 ? occurrences[idx - 1].end : null;
-            const showTimeSep = idx === 0 || (prevEnd && localStart.getTime() - prevEnd.getTime() > 30 * 60 * 1000);
+              const showTimeSep = idx === 0 || (prevEnd && localStart.getTime() - prevEnd.getTime() > 30 * 60 * 1000);
 
-            return (
+              return (
               <React.Fragment key={`${occ.eventId}-${occ.start.getTime()}`}>
                 {showTimeSep && (
                   <View style={styles.timeSep}>
@@ -264,10 +471,12 @@ export default function TodayScreen() {
                 </TouchableOpacity>
               </React.Fragment>
             );
-          })
-        )}
-        <View style={{ height: 140 }} />
-      </ScrollView>
+            })
+          )}
+          <View style={{ height: 140 }} />
+        </View>
+
+      </Animated.ScrollView>
 
       {/* ── FAB ── */}
       <TouchableOpacity
@@ -285,68 +494,100 @@ export default function TodayScreen() {
         lockedDate={today}
         editEvent={pressedEvent}
       />
-      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
-  container: { flex: 1, backgroundColor: '#F2F3F5' },
+  safeArea: { flex: 1, backgroundColor: '#44B57F' },
 
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 14,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+  // ── Outer scroll ──────────────────────────────────────────────────────────
+  scrollContent: { paddingBottom: 0 },
+
+  // ── HERO ──────────────────────────────────────────────────────────────────
+  hero: {
+    height: 300,
+    backgroundColor: '#44B57F',
+    overflow: 'hidden',
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
   },
-  headerLeft: { flex: 1 },
-  headerBrand: {
-    fontSize: 10,
+
+  // Animated blobs
+  blob: { position: 'absolute', borderRadius: 9999 },
+  blob5: { width: 440, height: 440, top: -110, left: -60,  backgroundColor: '#1B7A50', opacity: 0.50 },
+  blob1: { width: 300, height: 300, top: -70,  left: -50,  backgroundColor: '#2D9160', opacity: 0.55 },
+  blob2: { width: 240, height: 240, top: -20,  right: -50, backgroundColor: '#72DBA8', opacity: 0.40 },
+  blob3: { width: 210, height: 210, bottom: -40, right: -30, backgroundColor: '#22B498', opacity: 0.35 },
+  blob4: { width: 140, height: 140, bottom: 10, left: 40,  backgroundColor: '#C2F5DA', opacity: 0.45 },
+
+  // Frosted overlay — desaturates and smooths the blobs
+  heroFrost: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+
+  // Diagonal sheen sweep
+  sheen: {
+    position: 'absolute',
+    top: -30,
+    width: 52,
+    height: 420,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    transform: [{ rotate: '18deg' }],
+  },
+
+  heroContent: {
+    flex: 1,
+    paddingHorizontal: 26,
+    paddingTop: 22,
+    paddingBottom: 32,
+    justifyContent: 'flex-end',
+  },
+  heroBrand: {
+    fontSize: 9,
     fontWeight: '800',
-    color: '#AEAEB2',
-    letterSpacing: 2.5,
-    textTransform: 'uppercase',
-    marginBottom: 2,
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 3.5,
+    marginBottom: 12,
   },
-  headerTitle: {
-    fontSize: 26,
+  heroPhrase: {
+    fontSize: 34,
     fontWeight: '800',
-    color: '#2C2C2E',
-    letterSpacing: -0.3,
-    lineHeight: 30,
+    color: '#FFFFFF',
+    letterSpacing: -1.0,
+    lineHeight: 42,
+    marginBottom: 8,
   },
-  headerSubtitle: {
+  heroDate: {
     fontSize: 13,
-    color: '#9999A6',
     fontWeight: '500',
-    marginTop: 2,
+    color: 'rgba(255,255,255,0.75)',
     textTransform: 'capitalize',
+    marginBottom: 22,
   },
-  eventCountBadge: {
+  heroBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#EDF3FF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+    gap: 7,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 26,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  eventCountNum: {
-    fontSize: 16,
+  heroBtnText: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#5B9CF6',
+    color: '#1A6E46',
+    letterSpacing: 0.2,
   },
-  greeting: { fontSize: 13, fontWeight: '600', color: '#9999A6' },
-  dateLabel: { fontSize: 26, fontWeight: '700', color: '#2C2C2E' },
 
-  // Filter bar
+  // ── Filter bar ────────────────────────────────────────────────────────────
   filterBar: { flexGrow: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
   filterContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' },
   filterChip: {
@@ -366,9 +607,8 @@ const styles = StyleSheet.create({
   filterAvatar: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   filterAvatarText: { fontSize: 10, fontWeight: '700', color: '#fff' },
 
-  // Scroll
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
+  // ── Event list ────────────────────────────────────────────────────────────
+  eventList: { backgroundColor: '#F2F3F5', paddingHorizontal: 16, paddingTop: 16, minHeight: 300 },
 
   // Empty state
   emptyWrap: { alignItems: 'center', marginTop: 72, paddingHorizontal: 32 },
@@ -377,13 +617,7 @@ const styles = StyleSheet.create({
   emptyHint: { fontSize: 14, color: '#9999A6', textAlign: 'center', lineHeight: 20 },
 
   // Time separator
-  timeSep: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 4,
-    gap: 8,
-  },
+  timeSep: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 4, gap: 8 },
   timeSepLine: { flex: 1, height: 1, backgroundColor: '#E5E5EA' },
   timeSepText: { fontSize: 11, fontWeight: '700', color: '#AEAEB2', letterSpacing: 0.5 },
 
@@ -402,59 +636,20 @@ const styles = StyleSheet.create({
   cardWrapPast: { shadowOpacity: 0.02, elevation: 1 },
 
   typeDot: { width: 9, height: 9, borderRadius: 5, flexShrink: 0 },
+  cardTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: '#2C2C2E' },
+  cardTime: { fontSize: 13, color: '#AEAEB2', fontWeight: '500', flexShrink: 0 },
 
-  cardTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2C2C2E',
-  },
-  cardTime: {
-    fontSize: 13,
-    color: '#AEAEB2',
-    fontWeight: '500',
-    flexShrink: 0,
-  },
-
-  cardMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  typeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
+  cardMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: 'flex-start' },
   typeBadgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
-
   cardDuration: { fontSize: 12, color: '#AEAEB2', fontWeight: '400' },
-  ongoingPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginLeft: 'auto',
-  },
+
+  ongoingPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginLeft: 'auto' },
   ongoingPillText: { fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.2 },
 
   membersRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  memberChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  memberAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  memberChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
+  memberAvatar: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   memberAvatarText: { fontSize: 10, fontWeight: '700', color: '#fff' },
   memberName: { fontSize: 12, fontWeight: '600' },
 
@@ -478,4 +673,15 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabIcon: { color: '#FAFAF8', fontSize: 28, lineHeight: 32, fontWeight: '300' },
+
+  // Legacy (unused, kept for safety)
+  safeAreaLegacy: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#F2F3F5' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
+  headerLeft: { flex: 1 },
+  headerTitle: { fontSize: 26, fontWeight: '800', color: '#2C2C2E', letterSpacing: -0.3, lineHeight: 30 },
+  headerSubtitle: { fontSize: 13, color: '#9999A6', fontWeight: '500', marginTop: 2, textTransform: 'capitalize' },
+  eventCountBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#EDF3FF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
+  eventCountNum: { fontSize: 16, fontWeight: '700', color: '#5B9CF6' },
+  scroll: { flex: 1 },
 });
