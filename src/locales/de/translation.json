@@ -171,9 +171,13 @@
     "expiresIn": "G\u00fcltig f\u00fcr {{hours}} Stunden",
     "generateNew": "Neuen Code generieren"
   },
+  "nav": {
+    "week": "Woche",
+    "today": "Mein Tag",
+    "family": "Familie",
+    "settings": "Einst."
+  },
   "subscription": {
-    "premium": "FAMILJ Premium",
-    "currentPlan": "Aktueller Plan: {{plan}}",
     "planFree": "Kostenlos",
     "planMonthly": "Monatlich",
     "planYearly": "Jährlich",

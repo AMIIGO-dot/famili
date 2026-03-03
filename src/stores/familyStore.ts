@@ -8,9 +8,6 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
-// Keep in sync with authStore.ts
-const DEV_BYPASS = true;
-
 type Family = Database['public']['Tables']['families']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 type Subscription = Database['public']['Tables']['subscriptions']['Row'];
@@ -53,36 +50,48 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   fetchFamily: async (userId: string) => {
-    if (DEV_BYPASS) {
-      const devMembers: Member[] = [
-        { id: 'dev-member-1', family_id: 'dev-family-id', name: 'Simon', color: '#FF6B6B', role: 'parent', user_id: 'dev-user-id' } as Member,
-        { id: 'dev-member-2', family_id: 'dev-family-id', name: 'Emma',  color: '#4ECDC4', role: 'parent', user_id: null } as Member,
-        { id: 'dev-member-3', family_id: 'dev-family-id', name: 'Liam',  color: '#45B7D1', role: 'child',  user_id: null } as Member,
-      ];
-      const linked = devMembers.find((m) => m.user_id === userId) ?? null;
-      set({
-        family: { id: 'dev-family-id', name: 'Dev Family', owner_id: 'dev-user-id', created_at: new Date().toISOString() } as any,
-        members: devMembers,
-        currentMember: linked,
-        currentMemberRole: linked?.role ?? 'parent',
-        isLoading: false,
-      });
-      return;
-    }
     set({ isLoading: true });
     try {
-      // maybeSingle() returns null (not an error) when the user has no family yet
-      const { data, error } = await supabase
+      // 1. Check if user owns a family
+      const { data: ownedFamily, error: ownerErr } = await supabase
         .from('families')
         .select('*')
         .eq('owner_id', userId)
         .maybeSingle();
 
-      if (error) throw error;
-      set({ family: data ?? null });
-      if (data) {
+      if (ownerErr) throw ownerErr;
+
+      if (ownedFamily) {
+        set({ family: ownedFamily });
         await get().fetchMembers();
         get().resolveCurrentMember(userId);
+        return;
+      }
+
+      // 2. Check if user is a member (co-parent or child) of any family
+      const { data: memberRow, error: memberErr } = await supabase
+        .from('members')
+        .select('family_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (memberErr) throw memberErr;
+
+      if (memberRow?.family_id) {
+        const { data: joinedFamily, error: famErr } = await supabase
+          .from('families')
+          .select('*')
+          .eq('id', memberRow.family_id)
+          .single();
+
+        if (famErr) throw famErr;
+        set({ family: joinedFamily ?? null });
+        if (joinedFamily) {
+          await get().fetchMembers();
+          get().resolveCurrentMember(userId);
+        }
+      } else {
+        set({ family: null });
       }
     } catch (err) {
       console.error('[FamilyStore] fetchFamily error:', err);
@@ -139,18 +148,13 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   fetchSubscription: async (userId: string) => {
-    if (DEV_BYPASS) {
-      set({ subscription: null }); // free plan in dev
-      return;
-    }
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
-      // PGRST116 = no rows found (user is on free plan)
+    if (error) {
       console.error('[FamilyStore] fetchSubscription error:', error);
       return;
     }

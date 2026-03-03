@@ -6,11 +6,14 @@
  */
 
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n, { type SupportedLanguage } from '../i18n';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
+
+const LANG_STORAGE_KEY = '@familj:language';
 
 interface SettingsState {
   language: SupportedLanguage;
@@ -21,6 +24,7 @@ interface SettingsState {
 
   // Actions
   loadFromProfile: (profile: Profile) => void;
+  initLanguage: () => Promise<void>;
   setLanguage: (lang: SupportedLanguage, userId?: string) => Promise<void>;
   setTimezone: (tz: string, userId?: string) => Promise<void>;
   setWeekStartsOn: (day: 0 | 1, userId?: string) => Promise<void>;
@@ -43,11 +47,27 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       timeFormat: profile.time_format_preference as '12h' | '24h',
     });
     i18n.changeLanguage(profile.language);
+    // Keep AsyncStorage in sync with profile language
+    AsyncStorage.setItem(LANG_STORAGE_KEY, profile.language).catch(() => {});
+  },
+
+  initLanguage: async () => {
+    try {
+      const stored = await AsyncStorage.getItem(LANG_STORAGE_KEY);
+      if (stored && ['en', 'sv', 'de'].includes(stored)) {
+        set({ language: stored as SupportedLanguage });
+        await i18n.changeLanguage(stored);
+      }
+    } catch (_) {
+      // AsyncStorage not available — device language already applied by i18n.ts
+    }
   },
 
   setLanguage: async (lang, userId) => {
     set({ language: lang });
     await i18n.changeLanguage(lang);
+    // Always persist locally so the choice survives app restarts even without auth
+    await AsyncStorage.setItem(LANG_STORAGE_KEY, lang).catch(() => {});
     if (userId) {
       await supabase.from('profiles').update({ language: lang }).eq('id', userId);
     }

@@ -171,6 +171,12 @@
     "expiresIn": "Valid for {{hours}} hours",
     "generateNew": "Generate new code"
   },
+  "nav": {
+    "week": "Week",
+    "today": "My Day",
+    "family": "Family",
+    "settings": "Settings"
+  },
   "subscription": {
     "premium": "FAMILJ Premium",
     "currentPlan": "Current plan: {{plan}}",

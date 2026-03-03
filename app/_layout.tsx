@@ -17,19 +17,33 @@ import { useAuthStore } from '../src/stores/authStore';
 import { useSettingsStore } from '../src/stores/settingsStore';
 import { useFamilyStore } from '../src/stores/familyStore';
 import { useChildAuthStore } from '../src/stores/childAuthStore';
+import { usePurchaseStore } from '../src/stores/purchaseStore';
+import { initPurchases } from '../src/lib/purchases';
 import { supabase } from '../src/lib/supabase';
 
 export default function RootLayout() {
   const { initialize, session, isInitialized, profile, user } = useAuthStore();
-  const { loadFromProfile } = useSettingsStore();
+  const { loadFromProfile, initLanguage } = useSettingsStore();
   const { fetchFamily, family, isLoading: familyLoading, currentMemberRole, checkPendingInvite } = useFamilyStore();
   const { pinVerified: childPinVerified } = useChildAuthStore();
+  const { fetchCustomerInfo } = usePurchaseStore();
   const router = useRouter();
   const segments = useSegments();
 
+  // Restore persisted language first, then initialize auth
   useEffect(() => {
-    initialize();
+    initLanguage().then(() => initialize());
   }, []);
+
+  // Initialize RevenueCat when user is known
+  useEffect(() => {
+    if (user?.id) {
+      initPurchases(user.id).then(() => fetchCustomerInfo());
+    } else {
+      // User logged out — clear purchase state
+      usePurchaseStore.getState().reset();
+    }
+  }, [user?.id]);
 
   // Fetch family once user is known; if none found, check for a co-parent email invite
   useEffect(() => {

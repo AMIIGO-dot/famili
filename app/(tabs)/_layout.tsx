@@ -14,14 +14,15 @@ import Animated, {
   withSpring,
   useDerivedValue,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TAB_CONFIG: Record<string, { focused: IoniconName; outline: IoniconName; label: string }> = {
-  index:    { focused: 'calendar',  outline: 'calendar-outline',  label: 'Vecka'   },
-  today:    { focused: 'sunny',     outline: 'sunny-outline',     label: 'Min dag' },
-  family:   { focused: 'people',    outline: 'people-outline',    label: 'Familj'  },
-  settings: { focused: 'settings',  outline: 'settings-outline',  label: 'Inst.'   },
+const TAB_ICONS: Record<string, { focused: IoniconName; outline: IoniconName }> = {
+  index:    { focused: 'calendar',  outline: 'calendar-outline'  },
+  today:    { focused: 'sunny',     outline: 'sunny-outline'     },
+  family:   { focused: 'people',    outline: 'people-outline'    },
+  settings: { focused: 'settings',  outline: 'settings-outline'  },
 };
 
 const SPRING = {
@@ -31,9 +32,17 @@ const SPRING = {
 };
 
 function FamiljTabBar({ state, navigation }: BottomTabBarProps) {
+  const { t } = useTranslation();
   const tabCount = state.routes.length;
   const pillWidth = useSharedValue(0);
   const activeIndex = useSharedValue(state.index);
+
+  const TAB_LABELS: Record<string, string> = {
+    index:    t('nav.week'),
+    today:    t('nav.today'),
+    family:   t('nav.family'),
+    settings: t('nav.settings'),
+  };
 
   // Track active index changes
   if (activeIndex.value !== state.index) {
@@ -66,7 +75,8 @@ function FamiljTabBar({ state, navigation }: BottomTabBarProps) {
         {/* Tab buttons */}
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
-          const cfg = TAB_CONFIG[route.name] ?? TAB_CONFIG.settings;
+          const icons = TAB_ICONS[route.name] ?? TAB_ICONS.settings;
+          const label = TAB_LABELS[route.name] ?? route.name;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -89,12 +99,12 @@ function FamiljTabBar({ state, navigation }: BottomTabBarProps) {
             >
               <View style={styles.tabContent}>
                 <Ionicons
-                  name={isFocused ? cfg.focused : cfg.outline}
+                  name={isFocused ? icons.focused : icons.outline}
                   size={24}
                   color="#1C1C1E"
                 />
                 <Text style={[styles.label, isFocused && styles.labelFocused]}>
-                  {cfg.label}
+                  {label}
                 </Text>
               </View>
             </Pressable>
@@ -107,15 +117,16 @@ function FamiljTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 export default function TabLayout() {
+  const { t } = useTranslation();
   return (
     <Tabs
       tabBar={(props) => <FamiljTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen name="index"    options={{ title: 'Vecka'   }} />
-      <Tabs.Screen name="today"    options={{ title: 'Min dag' }} />
-      <Tabs.Screen name="family"   options={{ title: 'Familj'  }} />
-      <Tabs.Screen name="settings" options={{ title: 'Inst.'   }} />
+      <Tabs.Screen name="index"    options={{ title: t('nav.week')     }} />
+      <Tabs.Screen name="today"    options={{ title: t('nav.today')    }} />
+      <Tabs.Screen name="family"   options={{ title: t('nav.family')   }} />
+      <Tabs.Screen name="settings" options={{ title: t('nav.settings') }} />
     </Tabs>
   );
 }

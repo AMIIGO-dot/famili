@@ -10,9 +10,8 @@ import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
 // ─── DEV BYPASS ───────────────────────────────────────────────────────────────
-// Set to true to skip authentication entirely during development.
-// Remove before releasing to production.
-const DEV_BYPASS = true;
+// Set to false for real auth; true only for quick UI iteration without Supabase.
+const DEV_BYPASS = false;
 const DEV_FAKE_USER: User = {
   id: 'dev-user-id',
   email: 'dev@familj.app',
@@ -77,13 +76,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // First sign-in: create a default profile
       const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const deviceLocales = Intl.DateTimeFormat().resolvedOptions();
+      const deviceLocale = deviceLocales.locale ?? 'en-US';
       const { data: created, error: insertErr } = await supabase
         .from('profiles')
         .insert({
           id: user.id,
           language: 'en',
           timezone: deviceTz,
-          locale: 'en-US',
+          locale: deviceLocale,
           week_start_preference: 1,
           time_format_preference: '24h',
         })
@@ -102,6 +103,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     await supabase.auth.signOut();
     set({ session: null, user: null, profile: null });
+    // Log out from RevenueCat to clear cached customer info
+    try {
+      const { Purchases } = await import('../lib/purchases');
+      await Purchases.logOut();
+    } catch (_) {
+      // Ignore if RevenueCat not initialized
+    }
   },
 
   initialize: async () => {

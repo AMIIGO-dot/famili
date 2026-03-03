@@ -169,9 +169,13 @@
     "orEnterCode": "Eller ange den h\u00e4r koden manuellt",
     "expiresIn": "Giltig i {{hours}} timmar",
     "generateNew": "Generera ny kod"
-  },  "subscription": {
-    "premium": "FAMILJ Premium",
-    "currentPlan": "Nuvarande plan: {{plan}}",
+  },  "nav": {
+    "week": "Vecka",
+    "today": "Min dag",
+    "family": "Familj",
+    "settings": "Inst."
+  },
+  "subscription": {
     "planFree": "Gratis",
     "planMonthly": "Månadsvis",
     "planYearly": "Årsvis",

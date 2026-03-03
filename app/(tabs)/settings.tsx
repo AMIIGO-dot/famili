@@ -19,9 +19,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { Switch } from 'heroui-native';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 import { useFamilyStore } from '../../src/stores/familyStore';
+import { usePurchaseStore } from '../../src/stores/purchaseStore';
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../src/i18n';
 
 // â”€â”€â”€ App metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -224,8 +226,10 @@ function PrefsPanel() {
 
 function AccountPanel() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { user, signOut } = useAuthStore();
   const { family, members } = useFamilyStore();
+  const { isPremium } = usePurchaseStore();
 
   const email = user?.email ?? '';
   const initial = email.charAt(0).toUpperCase();
@@ -255,8 +259,10 @@ function AccountPanel() {
             </Text>
           )}
         </View>
-        <View style={styles.freeBadge}>
-          <Text style={styles.freeBadgeText}>FREE</Text>
+        <View style={[styles.freeBadge, isPremium && styles.premiumBadge]}>
+          <Text style={[styles.freeBadgeText, isPremium && styles.premiumBadgeText]}>
+            {isPremium ? 'PREMIUM' : 'FREE'}
+          </Text>
         </View>
       </View>
 
@@ -266,8 +272,10 @@ function AccountPanel() {
           icon="star-outline"
           iconColor="#F5A623"
           label={t('subscription.premium')}
-          sublabel={t('subscription.currentPlan', { plan: t('subscription.planFree') })}
-          onPress={() => Alert.alert(t('subscription.premium'), t('subscription.upgrade'))}
+          sublabel={t('subscription.currentPlan', {
+            plan: t(isPremium ? 'subscription.planMonthly' : 'subscription.planFree'),
+          })}
+          onPress={() => router.push('/paywall')}
           last
         />
       </Card>
@@ -520,6 +528,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   freeBadgeText: { fontSize: 10, fontWeight: '800', color: '#9999A6', letterSpacing: 1 },
+  premiumBadge: { backgroundColor: '#FFF3D6' },
+  premiumBadgeText: { color: '#C67C00' },
 
   // About
   appBrand: { alignItems: 'center', paddingVertical: 24, gap: 4 },
