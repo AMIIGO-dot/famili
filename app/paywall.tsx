@@ -75,7 +75,7 @@ function DevFallback({ onClose }: { onClose: () => void }) {
           {FEATURE_KEYS.map((key) => (
             <View key={key} style={styles.featureRow}>
               <View style={styles.featureIconWrap}>
-                <Ionicons name={FEATURE_ICONS[key] as any} size={18} color="#5B9CF6" />
+                <Ionicons name={FEATURE_ICONS[key] as any} size={18} color="#44B57F" />
               </View>
               <Text style={styles.featureLabel}>
                 {t(`subscription.features.${key}`)}

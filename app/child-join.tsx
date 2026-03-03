@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
   tabBtnActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.08, shadowOffset: { width: 0, height: 1 }, shadowRadius: 4, elevation: 2 },
   tabText: { fontSize: 14, fontWeight: '600', color: '#9999A6' },
-  tabTextActive: { color: '#2C2C2E' },
+  tabTextActive: { color: '#44B57F' },
 
   codeSection: { alignItems: 'center', gap: 20 },
   digitRow: { flexDirection: 'row', gap: 10 },
@@ -212,13 +212,13 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'transparent',
     alignItems: 'center', justifyContent: 'center',
   },
-  digitBoxActive: { borderColor: '#2C2C2E', backgroundColor: '#FAFAF8' },
+  digitBoxActive: { borderColor: '#44B57F', backgroundColor: '#FAFAF8' },
   digitBoxFilled: { backgroundColor: '#FAFAF8' },
   digitChar: { fontSize: 24, fontWeight: '700', color: '#2C2C2E' },
   hiddenInput: { position: 'absolute', opacity: 0, height: 0, width: 0 },
 
   joinBtn: {
-    backgroundColor: '#2C2C2E', paddingVertical: 16, paddingHorizontal: 48,
+    backgroundColor: '#44B57F', paddingVertical: 16, paddingHorizontal: 48,
     borderRadius: 16, alignItems: 'center', marginTop: 8, minWidth: 200,
   },
   joinBtnDisabled: { opacity: 0.35 },

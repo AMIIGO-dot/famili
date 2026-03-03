@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0DA',
   },
   dotActive: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#44B57F',
     width: 20,
   },
   stepContainer: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   langChipActive: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#44B57F',
   },
   langChipText: {
     fontSize: 13,
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   btn: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#44B57F',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0DA',
   },
   roleChipActive: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#44B57F',
   },
   roleChipText: {
     fontSize: 13,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   },
   colorDotSelected: {
     borderWidth: 3,
-    borderColor: '#2C2C2E',
+    borderColor: '#44B57F',
   },
   addMemberBtn: {
     borderWidth: 1.5,

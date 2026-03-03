@@ -9,6 +9,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,7 +17,7 @@ import {
   View,
 } from 'react-native';
 import { Card } from 'heroui-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -30,7 +31,7 @@ import EventCreateSheet from '../../src/components/EventCreateSheet';
 const ALL_ID = '__ALL__';
 
 const TYPE_COLORS: Record<string, string> = {
-  activity: '#5B9CF6',
+  activity: '#44B57F',
   homework: '#F5A623',
   test:     '#F97B8B',
   other:    '#9999A6',
@@ -46,7 +47,6 @@ const TYPE_BG: Record<string, string> = {
 const HERO_PHRASE_KEYS = [
   'today.heroPhrase1',
   'today.heroPhrase2',
-  'today.heroPhrase3',
   'today.heroPhrase4',
 ];
 
@@ -114,20 +114,6 @@ function HeroBackground() {
   const b5tx = useOscillate(-8, 8, 14000);
   const b5ty = useOscillate(-6, 10, 16000, 800);
 
-  // Sheen — diagonal white sweep every 7s
-  const sheenX = useRef(new Animated.Value(-120)).current;
-  useEffect(() => {
-    const sweep = () =>
-      Animated.sequence([
-        Animated.timing(sheenX, { toValue: 480, duration: 1600, useNativeDriver: true, easing: Easing.inOut(Easing.quad) }),
-        Animated.delay(5400),
-        Animated.timing(sheenX, { toValue: -120, duration: 0, useNativeDriver: true }),
-      ]);
-    const loop = Animated.loop(sweep());
-    loop.start();
-    return () => loop.stop();
-  }, []);
-
   // Particles
   const p1 = useParticle(3800,    0);
   const p2 = useParticle(4400, 1400);
@@ -165,8 +151,6 @@ function HeroBackground() {
       }]} />
       {/* Soft white frost */}
       <View style={styles.heroFrost} />
-      {/* Diagonal sheen */}
-      <Animated.View style={[styles.sheen, { transform: [{ translateX: sheenX }] }]} />
       {/* Floating particles */}
       {PARTICLES.map(({ p, left, bottom, size }, i) => (
         <Animated.View key={i} style={{
@@ -184,6 +168,7 @@ function HeroBackground() {
 export default function TodayScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sheetVisible, setSheetVisible] = useState(false);
   const [pressedEvent, setPressedEvent] = useState<EventOccurrence | undefined>(undefined);
   const [selectedMemberId, setSelectedMemberId] = useState<string>(ALL_ID);
@@ -292,22 +277,26 @@ export default function TodayScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={[]}>
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         scrollEventThrottle={16}
       >
         {/* ── HERO ── */}
-        <View style={styles.hero}>
+        <View style={[styles.hero, { height: 300 + insets.top }]}>
           <HeroBackground />
-          <View style={styles.heroContent}>
-            <Animated.Text style={[styles.heroBrand, {
-              opacity: brandEntrance,
-              transform: [{ translateX: brandEntrance.interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) }],
-            }]}>
-              {family?.name ? family.name.toUpperCase() : 'FAMILJ'}
-            </Animated.Text>
+
+          {/* Logo — centered, fades in with brand entrance */}
+          <Animated.View style={[styles.heroLogoWrap, { opacity: brandEntrance }]}>
+            <Image
+              source={require('../../assets/FAMILU app logo-white(1000 x 500 px).png')}
+              style={styles.heroLogo}
+              resizeMode="contain"
+            />
+          </Animated.View>
+
+          <View style={[styles.heroContent, { paddingTop: insets.top + 22 }]}>
             <Animated.Text style={[styles.heroPhrase, {
               opacity: Animated.multiply(phraseOpacity, phraseEntrance),
               transform: [
@@ -499,7 +488,7 @@ export default function TodayScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#44B57F' },
+  safeArea: { flex: 1, backgroundColor: '#F2F3F5' },
 
   // ── Outer scroll ──────────────────────────────────────────────────────────
   scrollContent: { paddingBottom: 0 },
@@ -509,8 +498,6 @@ const styles = StyleSheet.create({
     height: 300,
     backgroundColor: '#44B57F',
     overflow: 'hidden',
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
   },
 
   // Animated blobs
@@ -527,29 +514,27 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.07)',
   },
 
-  // Diagonal sheen sweep
-  sheen: {
-    position: 'absolute',
-    top: -30,
-    width: 52,
-    height: 420,
-    backgroundColor: 'rgba(255,255,255,0.28)',
-    transform: [{ rotate: '18deg' }],
-  },
-
   heroContent: {
     flex: 1,
     paddingHorizontal: 26,
-    paddingTop: 22,
+    paddingTop: 22,   // overridden inline with insets.top
     paddingBottom: 32,
     justifyContent: 'flex-end',
   },
-  heroBrand: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.65)',
-    letterSpacing: 3.5,
-    marginBottom: 12,
+  heroLogoWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  heroLogo: {
+    width: 140,
+    height: 70,
+    opacity: 0.95,
   },
   heroPhrase: {
     fontSize: 34,
@@ -601,7 +586,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     gap: 6,
   },
-  filterChipAllSel: { backgroundColor: '#2C2C2E', borderColor: '#2C2C2E' },
+  filterChipAllSel: { backgroundColor: '#44B57F', borderColor: '#44B57F' },
   filterChipText: { fontSize: 13, fontWeight: '600', color: '#6E6E7A' },
   filterChipTextSel: { color: '#fff' },
   filterAvatar: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
@@ -663,13 +648,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#44B57F',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: '#44B57F',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
     elevation: 8,
   },
   fabIcon: { color: '#FAFAF8', fontSize: 28, lineHeight: 32, fontWeight: '300' },
@@ -681,7 +666,7 @@ const styles = StyleSheet.create({
   headerLeft: { flex: 1 },
   headerTitle: { fontSize: 26, fontWeight: '800', color: '#2C2C2E', letterSpacing: -0.3, lineHeight: 30 },
   headerSubtitle: { fontSize: 13, color: '#9999A6', fontWeight: '500', marginTop: 2, textTransform: 'capitalize' },
-  eventCountBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#EDF3FF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
-  eventCountNum: { fontSize: 16, fontWeight: '700', color: '#5B9CF6' },
+  eventCountBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#F0FFF8', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
+  eventCountNum: { fontSize: 16, fontWeight: '700', color: '#44B57F' },
   scroll: { flex: 1 },
 });

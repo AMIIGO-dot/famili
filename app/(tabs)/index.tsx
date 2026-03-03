@@ -190,7 +190,7 @@ export default function WeeklyViewScreen() {
             onPress={() => setWeekOffset((w) => w - 1)}
             hitSlop={10}
           >
-            <Ionicons name="chevron-back" size={20} color="#2C2C2E" />
+            <Ionicons name="chevron-back" size={20} color="#44B57F" />
           </Pressable>
           <View style={styles.navDivider} />
           <Pressable
@@ -198,7 +198,7 @@ export default function WeeklyViewScreen() {
             onPress={() => setWeekOffset((w) => w + 1)}
             hitSlop={10}
           >
-            <Ionicons name="chevron-forward" size={20} color="#2C2C2E" />
+            <Ionicons name="chevron-forward" size={20} color="#44B57F" />
           </Pressable>
         </View>
       </View>
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     gap: 6,
   },
-  filterChipAllSel: { backgroundColor: '#2C2C2E', borderColor: '#2C2C2E' },
+  filterChipAllSel: { backgroundColor: '#44B57F', borderColor: '#44B57F' },
   filterChipText: { fontSize: 13, fontWeight: '600', color: '#6E6E7A' },
   filterChipTextSel: { color: '#fff' },
   filterAvatar: {
@@ -469,12 +469,12 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 18,
     borderBottomRightRadius: 18,
   },
-  dayRowToday: { backgroundColor: '#EDF3FF' },
+  dayRowToday: { backgroundColor: '#EBF7F2' },
   dayHeader: { width: 62, alignItems: 'center', paddingTop: 2 },
   dayName: { fontSize: 10, fontWeight: '700', color: '#AAAAAF', textTransform: 'uppercase', letterSpacing: 0.6 },
-  dayNameToday: { color: '#5B9CF6' },
+  dayNameToday: { color: '#44B57F' },
   dayNumWrap: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 3 },
-  dayNumWrapToday: { backgroundColor: '#5B9CF6' },
+  dayNumWrapToday: { backgroundColor: '#44B57F' },
   dayNum: { fontSize: 17, fontWeight: '600', color: '#2C2C2E' },
   dayNumToday: { color: '#fff' },
 
@@ -518,13 +518,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#000',
+    backgroundColor: '#44B57F',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: '#44B57F',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
     elevation: 8,
   },
   fabIcon: { color: '#FAFAF8', fontSize: 28, lineHeight: 32, fontWeight: '300' },

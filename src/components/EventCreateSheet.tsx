@@ -33,7 +33,7 @@ const EVENT_TYPES = ['activity', 'homework', 'test', 'other'] as const;
 type EventType = typeof EVENT_TYPES[number];
 
 const TYPE_META: Record<EventType, { dot: string; labelKey: string }> = {
-  activity: { dot: '#5B9CF6', labelKey: 'events.typeActivity' },
+  activity: { dot: '#44B57F', labelKey: 'events.typeActivity' },
   homework: { dot: '#F5A623', labelKey: 'events.typeHomework' },
   test:     { dot: '#F97B8B', labelKey: 'events.typeTest' },
   other:    { dot: '#9999A6', labelKey: 'events.typeOther' },
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
   lockedDateDay: { fontSize: 13, fontWeight: '700', color: '#FAFAF8', textTransform: 'capitalize' },
   lockedDateFull: { fontSize: 13, color: 'rgba(255,255,255,0.55)' },
   dateChip: { alignItems: 'center', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10, backgroundColor: '#F2F3F5', minWidth: 44 },
-  dateChipSel: { backgroundColor: '#2C2C2E' },
+  dateChipSel: { backgroundColor: '#44B57F' },
   dateDay: { fontSize: 9, fontWeight: '600', color: '#9999A6', textTransform: 'uppercase', letterSpacing: 0.4 },
   dateNum: { fontSize: 17, fontWeight: '700', color: '#2C2C2E', lineHeight: 22 },
   dateTextSel: { color: '#FAFAF8' },
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
   timeLabelBtn: { flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.04)' },
   timeLabel: { fontSize: 14, fontWeight: '700', color: '#2C2C2E', letterSpacing: 0.3 },
   timeLabelActive: { color: '#FAFAF8' },
-  timeLabelBtnActive: { backgroundColor: '#2C2C2E' },
+  timeLabelBtnActive: { backgroundColor: '#44B57F' },
   timeArrow: { fontSize: 14, color: '#AEAEB2', fontWeight: '400' },
 
   // Inline time picker — compact horizontal strips
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: '#fff',
   },
-  ipChipSel: { backgroundColor: '#2C2C2E' },
+  ipChipSel: { backgroundColor: '#44B57F' },
   ipChipText: { fontSize: 13, fontWeight: '500', color: '#2C2C2E' },
   ipChipTextSel: { color: '#FAFAF8', fontWeight: '700' },
 
@@ -787,16 +787,16 @@ const styles = StyleSheet.create({
   // Recurrence
   repeatHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 2 },
   repeatHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  repeatActiveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#5B9CF6' },
+  repeatActiveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#44B57F' },
   repeatChevron: { fontSize: 9, color: '#AEAEB2', marginBottom: 1 },
   recurrenceRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', paddingVertical: 4 },
   recurrenceChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, backgroundColor: '#F2F3F5' },
-  recurrenceChipSel: { backgroundColor: '#2C2C2E' },
+  recurrenceChipSel: { backgroundColor: '#44B57F' },
   recurrenceChipText: { fontSize: 12, fontWeight: '500', color: '#2C2C2E' },
   recurrenceChipTextSel: { color: '#FAFAF8' },
-  reminderChipSel: { backgroundColor: '#F0F7FF', borderWidth: 1.5, borderColor: '#5B9CF6' },
-  reminderChipTextSel: { color: '#1C54A5', fontWeight: '700' },
-  reminderSummary: { fontSize: 11, fontWeight: '600', color: '#5B9CF6', marginRight: 4 },
+  reminderChipSel: { backgroundColor: '#F0FFF8', borderWidth: 1.5, borderColor: '#44B57F' },
+  reminderChipTextSel: { color: '#1A6E46', fontWeight: '700' },
+  reminderSummary: { fontSize: 11, fontWeight: '600', color: '#44B57F', marginRight: 4 },
 
   // Actions
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 4 },

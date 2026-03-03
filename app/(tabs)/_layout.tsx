@@ -101,7 +101,7 @@ function FamiljTabBar({ state, navigation }: BottomTabBarProps) {
                 <Ionicons
                   name={isFocused ? icons.focused : icons.outline}
                   size={24}
-                  color="#1C1C1E"
+                  color={isFocused ? '#44B57F' : '#8E8E93'}
                 />
                 <Text style={[styles.label, isFocused && styles.labelFocused]}>
                   {label}
@@ -155,13 +155,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.07)',
     overflow: 'hidden',
   },
-  // The sliding grey blob
+  // The sliding green blob
   indicator: {
     position: 'absolute',
     top: 8,
     bottom: 8,
     borderRadius: 14,
-    backgroundColor: '#EFEFEF',
+    backgroundColor: 'rgba(68,181,127,0.13)',
   },
   tabItem: {
     flex: 1,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
   labelFocused: {
-    color: '#1C1C1E',
-    fontWeight: '600',
+    color: '#44B57F',
+    fontWeight: '700',
   },
 });

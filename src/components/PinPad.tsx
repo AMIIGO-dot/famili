@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     borderColor: '#C7C7CC',
     backgroundColor: 'transparent',
   },
-  dotFilled: { backgroundColor: '#2C2C2E', borderColor: '#2C2C2E' },
+  dotFilled: { backgroundColor: '#44B57F', borderColor: '#44B57F' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', width: 264, gap: 16 },
   key: {
     width: 77,

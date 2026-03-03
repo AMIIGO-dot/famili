@@ -56,7 +56,7 @@ function Divider() {
 
 function Row({
   icon,
-  iconColor = '#5B9CF6',
+  iconColor = '#44B57F',
   label,
   sublabel,
   right,
@@ -141,7 +141,7 @@ function PrefsPanel() {
 
       <SectionHeader label={t('settings.language')} />
       <Card>
-        <Row icon="language-outline" iconColor="#5B9CF6" label={LANGUAGE_FULL[language]} last
+        <Row icon="language-outline" iconColor="#44B57F" label={LANGUAGE_FULL[language]} last
           right={
             <View style={styles.chipRow}>
               {SUPPORTED_LANGUAGES.map((lang) => (
@@ -165,7 +165,7 @@ function PrefsPanel() {
       <Card>
         <Row
           icon="calendar-outline"
-          iconColor="#68D9A4"
+          iconColor="#44B57F"
           label={weekStartsOn === 1 ? t('settings.weekStartMonday') : t('settings.weekStartSunday')}
           last
           right={
@@ -191,7 +191,7 @@ function PrefsPanel() {
       <Card>
         <Row
           icon="time-outline"
-          iconColor="#F5A623"
+          iconColor="#44B57F"
           label={t(timeFormat === '24h' ? 'settings.timeFormat24h' : 'settings.timeFormat12h')}
           last
           right={
@@ -211,7 +211,7 @@ function PrefsPanel() {
       <Card>
         <Row
           icon="globe-outline"
-          iconColor="#BF86FF"
+          iconColor="#44B57F"
           label={timezone}
           sublabel={t('settings.detectedTimezone')}
           last
@@ -270,7 +270,7 @@ function AccountPanel() {
       <Card>
         <Row
           icon="star-outline"
-          iconColor="#F5A623"
+          iconColor="#44B57F"
           label={t('subscription.premium')}
           sublabel={t('subscription.currentPlan', {
             plan: t(isPremium ? 'subscription.planMonthly' : 'subscription.planFree'),
@@ -279,7 +279,7 @@ function AccountPanel() {
         />
         <Row
           icon="headset-outline"
-          iconColor="#5B9CF6"
+          iconColor="#44B57F"
           label={t('subscription.manageSubscription')}
           sublabel={t('subscription.manageSubscriptionSub')}
           onPress={() => router.push('/customer-center')}
@@ -328,13 +328,13 @@ function AboutPanel() {
       <Card>
         <Row
           icon="document-text-outline"
-          iconColor="#5B9CF6"
+          iconColor="#44B57F"
           label={t('settings.termsOfUse')}
           onPress={() => open(LINKS.terms)}
         />
         <Row
           icon="shield-checkmark-outline"
-          iconColor="#68D9A4"
+          iconColor="#44B57F"
           label={t('settings.privacyPolicy')}
           onPress={() => open(LINKS.privacy)}
           last
@@ -345,14 +345,14 @@ function AboutPanel() {
       <Card>
         <Row
           icon="mail-outline"
-          iconColor="#BF86FF"
+          iconColor="#44B57F"
           label={t('settings.contactSupport')}
           sublabel="hello@familj.app"
           onPress={() => open(LINKS.support)}
         />
         <Row
           icon="star-half-outline"
-          iconColor="#F5A623"
+          iconColor="#44B57F"
           label={t('settings.rateApp')}
           onPress={() => Alert.alert('Rate FAMILJ', 'Coming soon on the App Store')}
           last
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F3F5',
     alignItems: 'center',
   },
-  segItemActive: { backgroundColor: '#2C2C2E' },
+  segItemActive: { backgroundColor: '#44B57F' },
   segLabel: { fontSize: 13, fontWeight: '600', color: '#6E6E7A' },
   segLabelActive: { color: '#FFFFFF' },
 
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   // Chips
   chipRow: { flexDirection: 'row', gap: 6 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: '#F2F3F5' },
-  chipActive: { backgroundColor: '#2C2C2E' },
+  chipActive: { backgroundColor: '#44B57F' },
   chipText: { fontSize: 13, fontWeight: '600', color: '#6E6E7A' },
   chipTextActive: { color: '#FAFAF8' },
 

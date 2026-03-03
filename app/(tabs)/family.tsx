@@ -156,7 +156,7 @@ export default function FamilyScreen() {
         </TouchableOpacity>
         {currentMemberRole === 'parent' && (
           <TouchableOpacity style={styles.addIconBtn} onPress={openAdd} activeOpacity={0.75}>
-            <Ionicons name="person-add" size={18} color="#2C2C2E" />
+            <Ionicons name="person-add" size={18} color="#44B57F" />
           </TouchableOpacity>
         )}
       </View>
@@ -193,7 +193,7 @@ export default function FamilyScreen() {
                 onPress={() => { setInviteMember(m); setInviteOpen(true); }}
                 hitSlop={10}
               >
-                <Ionicons name="person-add-outline" size={16} color="#5B9CF6" />
+                <Ionicons name="person-add-outline" size={16} color="#44B57F" />
               </TouchableOpacity>
             )}
             {/* Delete — parents only */}
@@ -223,8 +223,8 @@ export default function FamilyScreen() {
             onPress={() => { setParentInviteEmail(''); setParentInviteSent(false); setParentInviteOpen(true); }}
             activeOpacity={0.7}
           >
-            <Ionicons name="mail-outline" size={14} color="#5B9CF6" style={{ marginRight: 6 }} />
-            <Text style={[styles.addBtnText, { color: '#5B9CF6' }]}>{t('parentInvite.button')}</Text>
+            <Ionicons name="mail-outline" size={14} color="#44B57F" style={{ marginRight: 6 }} />
+            <Text style={[styles.addBtnText, { color: '#44B57F' }]}>{t('parentInvite.button')}</Text>
           </TouchableOpacity>
         )}
 
@@ -559,18 +559,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F3F5',
     alignItems: 'center',
   },
-  roleChipSel: { backgroundColor: '#2C2C2E' },
+  roleChipSel: { backgroundColor: '#44B57F' },
   roleChipText: { fontSize: 14, fontWeight: '600', color: '#6E6E7A' },
   roleChipTextSel: { color: '#fff' },
   colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginBottom: 24 },
   colorSwatch: { width: 32, height: 32, borderRadius: 16 },
-  colorSwatchSel: { borderWidth: 3, borderColor: '#2C2C2E' },
+  colorSwatchSel: { borderWidth: 3, borderColor: '#44B57F' },
   coParentBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    borderColor: '#5B9CF6',
+    borderColor: '#44B57F',
   },
   sentWrap: { alignItems: 'center', paddingVertical: 16, gap: 8 },
   sentTitle: { fontSize: 18, fontWeight: '700', color: '#2C2C2E', marginTop: 8 },

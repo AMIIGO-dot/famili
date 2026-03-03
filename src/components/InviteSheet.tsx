@@ -91,7 +91,7 @@ export default function InviteSheet({ open, member, familyId, onClose }: Props) 
 
             {loading ? (
               <View style={styles.center}>
-                <ActivityIndicator size="large" color="#2C2C2E" />
+                <ActivityIndicator size="large" color="#44B57F" />
               </View>
             ) : error ? (
               <View style={styles.center}>
