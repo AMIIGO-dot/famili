@@ -22,6 +22,12 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { useAuthStore } from '../stores/authStore';
 import { convertUTCToLocal } from '../lib/time';
 import type { RecurrenceRule } from '../lib/time';
+import {
+  REMINDER_OPTIONS,
+  scheduleEventReminder,
+  cancelEventReminder,
+} from '../lib/notifications';
+import type { ReminderValue } from '../lib/notifications';
 
 const EVENT_TYPES = ['activity', 'homework', 'test', 'other'] as const;
 type EventType = typeof EVENT_TYPES[number];
@@ -51,7 +57,13 @@ function buildDateStrip(from: Date): Date[] {
   return days;
 }
 
-
+// ─── Inline Time Picker ────────────────────────────────────────────────────
+const MINUTE_STEPS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const CHIP_W = 38; // width of each chip
+const CHIP_GAP = 4; // gap between chips
+const CHIP_STEP = CHIP_W + CHIP_GAP;
+// ────────────────────────────────────────────────────────────────────────────
 
 interface Props {
   visible: boolean;
@@ -66,6 +78,9 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const insets = useSafeAreaInsets();
   const inputRef = useRef<any>(null);
   const dateScrollRef = useRef<any>(null);
+  const contentScrollRef = useRef<any>(null);
+  const hourScrollRef = useRef<ScrollView>(null);
+  const minScrollRef = useRef<ScrollView>(null);
 
   const { members, family } = useFamilyStore();
   const { currentMemberRole } = useFamilyStore();
@@ -91,7 +106,17 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const [recurrence, setRecurrence] = useState<'none' | 'weekly' | 'biweekly' | 'weekdays'>('none');
   const [repeatOpen, setRepeatOpen] = useState(false);
   const [isParentsOnly, setIsParentsOnly] = useState(false);
+  const [reminderMinutes, setReminderMinutes] = useState<ReminderValue>(null);
+  const [reminderOpen, setReminderOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [timePickerTarget, setTimePickerTarget] = useState<'start' | 'end' | null>(null);
+
+  // Scroll content to bottom when an expandable section opens
+  useEffect(() => {
+    if (repeatOpen || reminderOpen) {
+      setTimeout(() => contentScrollRef.current?.scrollToEnd({ animated: true }), 80);
+    }
+  }, [repeatOpen, reminderOpen]);
   const [deleting, setDeleting] = useState(false);
 
   // Reset selection to first date whenever the viewed week changes
@@ -115,6 +140,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       const freq = (editEvent.recurrenceRule as RecurrenceRule | null)?.frequency;
       setRecurrence(freq ?? 'none');
       setIsParentsOnly(editEvent.isParentsOnly ?? false);
+      setReminderMinutes((editEvent.reminderMinutes ?? null) as ReminderValue);
     } else if (visible && !editEvent) {
       // Reset to defaults for new event
       setTitle('');
@@ -126,6 +152,9 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       setRecurrence('none');
       setRepeatOpen(false);
       setIsParentsOnly(false);
+      setReminderMinutes(null);
+      setReminderOpen(false);
+      setTimePickerTarget(null);
     }
   }, [visible, editEvent?.eventId]);
 
@@ -158,6 +187,65 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
     if (total >= 24 * 60) total = 23 * 60 + 45;
     setEndHour(Math.floor(total / 60));
     setEndMinute(total % 60);
+  };
+
+  const toggleTimePicker = (target: 'start' | 'end') =>
+    setTimePickerTarget((prev) => (prev === target ? null : target));
+
+  // Auto-scroll the hour/minute strips to center the selected value
+  useEffect(() => {
+    if (timePickerTarget === null) return;
+    const h = timePickerTarget === 'start' ? startHour : endHour;
+    const m = timePickerTarget === 'start' ? startMinute : endMinute;
+    const mIdx = MINUTE_STEPS.indexOf(MINUTE_STEPS.reduce((a, b) => Math.abs(b - m) < Math.abs(a - m) ? b : a));
+    setTimeout(() => {
+      hourScrollRef.current?.scrollTo({ x: Math.max(0, h * CHIP_STEP - CHIP_STEP * 2), animated: true });
+      minScrollRef.current?.scrollTo({ x: Math.max(0, mIdx * CHIP_STEP - CHIP_STEP * 2), animated: true });
+    }, 50);
+  }, [timePickerTarget]);
+
+  const pickHour = (h: number) => {
+    if (timePickerTarget === 'start') {
+      setStartHour(h);
+      const startTotal = h * 60 + startMinute;
+      if (endHour * 60 + endMinute <= startTotal) {
+        const newEnd = Math.min(startTotal + 60, 23 * 60 + 45);
+        setEndHour(Math.floor(newEnd / 60));
+        setEndMinute(newEnd % 60);
+      }
+    } else {
+      const startTotal = startHour * 60 + startMinute;
+      const proposed = h * 60 + endMinute;
+      if (proposed <= startTotal) {
+        const adj = startTotal + 15;
+        setEndHour(Math.floor(adj / 60) % 24);
+        setEndMinute(adj % 60);
+      } else {
+        setEndHour(h);
+      }
+    }
+  };
+
+  const pickMinute = (m: number) => {
+    if (timePickerTarget === 'start') {
+      setStartMinute(m);
+      const startTotal = startHour * 60 + m;
+      if (endHour * 60 + endMinute <= startTotal) {
+        const newEnd = Math.min(startTotal + 60, 23 * 60 + 45);
+        setEndHour(Math.floor(newEnd / 60));
+        setEndMinute(newEnd % 60);
+      }
+    } else {
+      const startTotal = startHour * 60 + startMinute;
+      const proposed = endHour * 60 + m;
+      if (proposed <= startTotal) {
+        const adj = startTotal + 15;
+        setEndHour(Math.floor(adj / 60) % 24);
+        setEndMinute(adj % 60);
+      } else {
+        setEndMinute(m);
+      }
+    }
   };
 
   const startLabel = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
@@ -193,12 +281,24 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           type: eventType,
           start_time_utc: start.toISOString(),
           end_time_utc: end.toISOString(),
-          member_ids: selectedMemberIds.length > 0 ? selectedMemberIds : members.map((m) => m.id),
+          member_ids: selectedMemberIds,
           recurrence_rule: recurrenceRule as any,
           is_parents_only: isParentsOnly,
+          reminder_minutes: reminderMinutes,
         });
+        // Reschedule reminder
+        if (reminderMinutes) {
+          await scheduleEventReminder({
+            eventId: editEvent.eventId,
+            title: title.trim(),
+            startTimeUtc: start,
+            reminderMinutes,
+          });
+        } else {
+          await cancelEventReminder(editEvent.eventId);
+        }
       } else {
-        await createEvent({
+        const created = await createEvent({
           family_id: family.id,
           title: title.trim(),
           type: eventType,
@@ -206,10 +306,19 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           end_time_utc: end.toISOString(),
           timezone,
           created_by: user?.id ?? '',
-          member_ids: selectedMemberIds.length > 0 ? selectedMemberIds : members.map((m) => m.id),
+          member_ids: selectedMemberIds,
           recurrence_rule: recurrenceRule as any,
           is_parents_only: isParentsOnly,
+          reminder_minutes: reminderMinutes,
         });
+        if (created && reminderMinutes) {
+          await scheduleEventReminder({
+            eventId: created.id,
+            title: title.trim(),
+            startTimeUtc: start,
+            reminderMinutes,
+          });
+        }
       }
       setTitle(''); setSelectedDateIdx(0); setStartHour(9); setStartMinute(0);
       setEndHour(10); setEndMinute(0); setEventType('activity'); setSelectedMemberIds([]);
@@ -224,6 +333,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
     if (!editEvent) return;
     setDeleting(true);
     try {
+      await cancelEventReminder(editEvent.eventId);
       await deleteEvent(editEvent.eventId);
       close();
     } finally {
@@ -241,10 +351,11 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           className="mx-3"
           backgroundClassName="rounded-[28px]"
           enablePanDownToClose
-          snapPoints={['65%']}
+          snapPoints={['65%', '92%']}
         >
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView
+              ref={contentScrollRef}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={styles.scrollContent}
@@ -319,6 +430,9 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                       );
                     })}
                   </View>
+                  {selectedMemberIds.length === 0 && (
+                    <Text style={styles.memberHint}>{t('events.selectMemberHint')}</Text>
+                  )}
                   <View style={styles.divider} />
                 </>
               )}
@@ -378,7 +492,12 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                   <TouchableOpacity style={styles.stepBtn} onPress={() => stepTime(-15)}>
                     <Text style={styles.stepBtnText}>−</Text>
                   </TouchableOpacity>
-                  <Text style={styles.timeLabel}>{startLabel}</Text>
+                  <TouchableOpacity
+                    style={[styles.timeLabelBtn, timePickerTarget === 'start' && styles.timeLabelBtnActive]}
+                    onPress={() => toggleTimePicker('start')}
+                  >
+                    <Text style={[styles.timeLabel, timePickerTarget === 'start' && styles.timeLabelActive]}>{startLabel}</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity style={styles.stepBtn} onPress={() => stepTime(15)}>
                     <Text style={styles.stepBtnText}>+</Text>
                   </TouchableOpacity>
@@ -388,12 +507,71 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                   <TouchableOpacity style={styles.stepBtn} onPress={() => stepEndTime(-15)}>
                     <Text style={styles.stepBtnText}>−</Text>
                   </TouchableOpacity>
-                  <Text style={styles.timeLabel}>{endLabel}</Text>
+                  <TouchableOpacity
+                    style={[styles.timeLabelBtn, timePickerTarget === 'end' && styles.timeLabelBtnActive]}
+                    onPress={() => toggleTimePicker('end')}
+                  >
+                    <Text style={[styles.timeLabel, timePickerTarget === 'end' && styles.timeLabelActive]}>{endLabel}</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity style={styles.stepBtn} onPress={() => stepEndTime(15)}>
                     <Text style={styles.stepBtnText}>+</Text>
                   </TouchableOpacity>
                 </View>
               </View>
+
+              {/* Inline Time Picker — two horizontal scroll strips */}
+              {timePickerTarget !== null && (() => {
+                const curH = timePickerTarget === 'start' ? startHour : endHour;
+                const curM = timePickerTarget === 'start' ? startMinute : endMinute;
+                return (
+                  <View style={styles.inlinePicker}>
+                    <View style={styles.ipStrip}>
+                      <Text style={styles.ipStripLabel}>H</Text>
+                      <ScrollView
+                        ref={hourScrollRef}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.ipScrollContent}
+                        decelerationRate="fast"
+                      >
+                        {HOURS.map((h) => (
+                          <TouchableOpacity
+                            key={h}
+                            style={[styles.ipChip, h === curH && styles.ipChipSel]}
+                            onPress={() => pickHour(h)}
+                          >
+                            <Text style={[styles.ipChipText, h === curH && styles.ipChipTextSel]}>
+                              {String(h).padStart(2, '0')}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                    <View style={styles.ipStrip}>
+                      <Text style={styles.ipStripLabel}>M</Text>
+                      <ScrollView
+                        ref={minScrollRef}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.ipScrollContent}
+                        decelerationRate="fast"
+                      >
+                        {MINUTE_STEPS.map((m) => (
+                          <TouchableOpacity
+                            key={m}
+                            style={[styles.ipChip, m === curM && styles.ipChipSel]}
+                            onPress={() => pickMinute(m)}
+                          >
+                            <Text style={[styles.ipChipText, m === curM && styles.ipChipTextSel]}>
+                              {String(m).padStart(2, '0')}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </View>
+                );
+              })()}
 
               {/* REPEAT */}
               <View style={styles.divider} />
@@ -432,24 +610,58 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                 </View>
               )}
 
+              {/* REMINDER */}
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.repeatHeader}
+                onPress={() => setReminderOpen((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.sectionLabel}>{t('events.reminderLabel')}</Text>
+                <View style={styles.repeatHeaderRight}>
+                  {reminderMinutes !== null && !reminderOpen && (
+                    <Text style={styles.reminderSummary}>
+                      {t(REMINDER_OPTIONS.find((o) => o.value === reminderMinutes)?.labelKey ?? 'events.reminderNone')}
+                    </Text>
+                  )}
+                  <Text style={styles.repeatChevron}>{reminderOpen ? '▲' : '▼'}</Text>
+                </View>
+              </TouchableOpacity>
+              {reminderOpen && (
+                <View style={styles.recurrenceRow}>
+                  {REMINDER_OPTIONS.map((opt) => {
+                    const sel = reminderMinutes === opt.value;
+                    return (
+                      <TouchableOpacity
+                        key={String(opt.value)}
+                        style={[styles.recurrenceChip, sel && styles.reminderChipSel]}
+                        onPress={() => { setReminderMinutes(opt.value); setReminderOpen(false); }}
+                      >
+                        <Text style={[styles.recurrenceChipText, sel && styles.reminderChipTextSel]}>
+                          {opt.value !== null && sel ? `🔔 ` : ''}{t(opt.labelKey)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
               {/* Actions */}
               <View style={styles.actionRow}>
                 {editEvent && (
                   <Button
-                    variant="ghost"
+                    variant="danger-soft"
                     style={styles.deleteHeroBtn}
                     isDisabled={deleting}
                     onPress={handleDelete}
                   >
-                    <Text style={styles.deleteBtnText}>
-                      {deleting ? '…' : t('events.deleteEvent')}
-                    </Text>
+                    {deleting ? '…' : t('events.deleteEvent')}
                   </Button>
                 )}
                 <Button
                   variant="primary"
                   style={styles.saveHeroBtn}
-                  isDisabled={!title.trim() || saving}
+                  isDisabled={!title.trim() || saving || (members.length > 0 && selectedMemberIds.length === 0)}
                   onPress={handleSave}
                 >
                   {saving ? '…' : editEvent ? t('events.saveChanges') : t('events.save')}
@@ -478,7 +690,7 @@ const styles = StyleSheet.create({
   },
   titleInput: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
     color: '#2C2C2E',
   },
@@ -523,8 +735,35 @@ const styles = StyleSheet.create({
   timeStepper: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F3F5', borderRadius: 10, overflow: 'hidden' },
   stepBtn: { paddingHorizontal: 12, paddingVertical: 7 },
   stepBtnText: { fontSize: 18, color: '#2C2C2E', lineHeight: 22 },
-  timeLabel: { flex: 1, textAlign: 'center', fontSize: 14, fontWeight: '700', color: '#2C2C2E', letterSpacing: 0.3 },
+  timeLabelBtn: { flex: 1, alignItems: 'center', paddingVertical: 7, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.04)' },
+  timeLabel: { fontSize: 14, fontWeight: '700', color: '#2C2C2E', letterSpacing: 0.3 },
+  timeLabelActive: { color: '#FAFAF8' },
+  timeLabelBtnActive: { backgroundColor: '#2C2C2E' },
   timeArrow: { fontSize: 14, color: '#AEAEB2', fontWeight: '400' },
+
+  // Inline time picker — compact horizontal strips
+  inlinePicker: {
+    backgroundColor: '#F2F3F5',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 6,
+    gap: 5,
+  },
+  ipStrip: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ipStripLabel: { fontSize: 9, fontWeight: '800', color: '#AEAEB2', letterSpacing: 0.8, width: 14, textAlign: 'center' },
+  ipScrollContent: { gap: CHIP_GAP, paddingVertical: 2 },
+  ipChip: {
+    width: CHIP_W,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 7,
+    backgroundColor: '#fff',
+  },
+  ipChipSel: { backgroundColor: '#2C2C2E' },
+  ipChipText: { fontSize: 13, fontWeight: '500', color: '#2C2C2E' },
+  ipChipTextSel: { color: '#FAFAF8', fontWeight: '700' },
 
   // Parents-only toggle
   parentsOnlyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
@@ -534,6 +773,7 @@ const styles = StyleSheet.create({
 
   // Members — circles only
   memberRow: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', paddingVertical: 2 },
+  memberHint: { fontSize: 11, color: '#F97B8B', marginTop: 2, marginBottom: 2 },
   avatar: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   avatarInitial: { fontSize: 14, fontWeight: '700' },
 
@@ -554,10 +794,12 @@ const styles = StyleSheet.create({
   recurrenceChipSel: { backgroundColor: '#2C2C2E' },
   recurrenceChipText: { fontSize: 12, fontWeight: '500', color: '#2C2C2E' },
   recurrenceChipTextSel: { color: '#FAFAF8' },
+  reminderChipSel: { backgroundColor: '#F0F7FF', borderWidth: 1.5, borderColor: '#5B9CF6' },
+  reminderChipTextSel: { color: '#1C54A5', fontWeight: '700' },
+  reminderSummary: { fontSize: 11, fontWeight: '600', color: '#5B9CF6', marginRight: 4 },
 
   // Actions
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 4 },
   saveHeroBtn: { flex: 1 },
-  deleteHeroBtn: { flex: 0 },
-  deleteBtnText: { color: '#F97B8B', fontSize: 14, fontWeight: '600' },
+  deleteHeroBtn: { flex: 1 },
 });

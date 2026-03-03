@@ -15,6 +15,15 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { format, getISOWeek } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +56,66 @@ export default function WeeklyViewScreen() {
 
   const weekRange = getWeekRangeByOffset(weekOffset, weekStartsOn, timezone);
   const weekNumber = getISOWeek(weekRange.start);
+
+  // Ordered list of filter IDs for swipe cycling
+  const filterIds = [ALL_ID, ...members.map((m) => m.id)];
+
+  // Reanimated values for smooth member-switch transition
+  const translateX = useSharedValue(0);
+  const opacity    = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+    opacity: opacity.value,
+  }));
+
+  const SLIDE_OUT = 45;
+  const EXIT_MS   = 100;
+  const ENTER_MS  = 220;
+
+  const swipeGesture = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetX([-18, 18])
+    .failOffsetY([-14, 14])
+    .onUpdate((e) => {
+      translateX.value = e.translationX * 0.12;
+      opacity.value = interpolate(
+        Math.abs(e.translationX),
+        [0, 130],
+        [1, 0.72],
+        Extrapolation.CLAMP,
+      );
+    })
+    .onEnd((e) => {
+      const isDecisive =
+        Math.abs(e.velocityX) > 280 || Math.abs(e.translationX) > 55;
+
+      if (!isDecisive) {
+        // Snap back
+        translateX.value = withSpring(0, { damping: 22, stiffness: 340 });
+        opacity.value    = withTiming(1, { duration: 160 });
+        return;
+      }
+
+      const goNext = e.velocityX < 0; // swipe left → next
+      const currentIdx = filterIds.indexOf(selectedMemberId);
+      const nextId = goNext
+        ? filterIds[(currentIdx + 1) % filterIds.length]
+        : filterIds[(currentIdx - 1 + filterIds.length) % filterIds.length];
+
+      // Slide + fade out
+      translateX.value = withTiming(goNext ? -SLIDE_OUT : SLIDE_OUT, { duration: EXIT_MS });
+      opacity.value    = withTiming(0, { duration: EXIT_MS });
+
+      setTimeout(() => {
+        // Switch member then slide in from opposite side
+        setSelectedMemberId(nextId);
+        translateX.value = goNext ? SLIDE_OUT : -SLIDE_OUT;
+        opacity.value    = 0;
+        translateX.value = withSpring(0, { damping: 18, stiffness: 200 });
+        opacity.value    = withTiming(1, { duration: ENTER_MS });
+      }, EXIT_MS + 10);
+    });
 
   useEffect(() => {
     if (family) {
@@ -175,11 +244,13 @@ export default function WeeklyViewScreen() {
       </ScrollView>
 
       {/* ── Day list ── */}
-      <ScrollView
-        style={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <GestureDetector gesture={swipeGesture}>
+        <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+        <ScrollView
+          style={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
         <View style={styles.weekCard}>
           {days.map((day, idx) => {
             const dayEvents = getEventsForDay(day);
@@ -267,6 +338,8 @@ export default function WeeklyViewScreen() {
         {/* bottom padding so FAB doesn't cover last event */}
         <View style={{ height: 140 }} />
       </ScrollView>
+        </Animated.View>
+      </GestureDetector>
 
       {/* —— FAB —— only parents can create events */}
       {currentMemberRole === 'parent' && (

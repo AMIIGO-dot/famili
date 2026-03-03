@@ -27,6 +27,7 @@ export interface EventOccurrence {
   color?: string;
   isRecurring: boolean;
   isParentsOnly: boolean;
+  reminderMinutes: number | null;
   recurrenceRule?: Event['recurrence_rule'];
 }
 
@@ -104,6 +105,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
             memberIds: event.member_ids ?? [],
             isRecurring: false,
             isParentsOnly: event.is_parents_only ?? false,
+            reminderMinutes: event.reminder_minutes ?? null,
             recurrenceRule: null,
           });
         }
@@ -127,6 +129,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
             memberIds: event.member_ids ?? [],
             isRecurring: true,
             isParentsOnly: event.is_parents_only ?? false,
+            reminderMinutes: event.reminder_minutes ?? null,
             recurrenceRule: event.recurrence_rule,
           });
         }

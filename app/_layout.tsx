@@ -19,6 +19,7 @@ import { useFamilyStore } from '../src/stores/familyStore';
 import { useChildAuthStore } from '../src/stores/childAuthStore';
 import { usePurchaseStore } from '../src/stores/purchaseStore';
 import { initPurchases } from '../src/lib/purchases';
+import { requestNotificationPermission } from '../src/lib/notifications';
 import { supabase } from '../src/lib/supabase';
 
 export default function RootLayout() {
@@ -33,6 +34,7 @@ export default function RootLayout() {
   // Restore persisted language first, then initialize auth
   useEffect(() => {
     initLanguage().then(() => initialize());
+    requestNotificationPermission();
   }, []);
 
   // Initialize RevenueCat when user is known

@@ -74,8 +74,10 @@
     "forWhom": "For whom?",
     "reminderLabel": "Reminder",
     "reminderNone": "No reminder",
+    "reminder30Min": "30 minutes before",
     "reminder1Hour": "1 hour before",
     "reminder1Day": "1 day before",
+    "reminder2Days": "2 days before",
     "recurrenceLabel": "Repeat",
     "recurrenceNone": "Never",
     "recurrenceWeekly": "Every week",
@@ -96,7 +98,8 @@
     "sectionWhat": "What",
     "sectionWhen": "When",
     "parentsOnly": "Parents only",
-    "parentsOnlyHint": "Hidden from children"
+    "parentsOnlyHint": "Hidden from children",
+    "selectMemberHint": "Select at least one person"
   },
   "settings": {
     "title": "Settings",

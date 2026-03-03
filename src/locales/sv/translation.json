@@ -74,8 +74,10 @@
     "forWhom": "Vem gäller det?",
     "reminderLabel": "Påminnelse",
     "reminderNone": "Ingen påminnelse",
+    "reminder30Min": "30 minuter innan",
     "reminder1Hour": "1 timme innan",
     "reminder1Day": "1 dag innan",
+    "reminder2Days": "2 dagar innan",
     "recurrenceLabel": "Upprepa",
     "recurrenceNone": "Aldrig",
     "recurrenceWeekly": "Varje vecka",
@@ -90,13 +92,14 @@
     "durationLabel": "Längd",
     "allDay": "Heldag",
     "save": "Spara händelse",
-    "saveChanges": "Spara ändringar",
-    "deleteEvent": "Ta bort händelse",
+    "saveChanges": "Spara",
+    "deleteEvent": "Ta bort",
     "sectionWho": "Vem",
     "sectionWhat": "Vad",
     "sectionWhen": "När",
     "parentsOnly": "Endast föräldrar",
-    "parentsOnlyHint": "Dold för barn"
+    "parentsOnlyHint": "Dold för barn",
+    "selectMemberHint": "Välj minst en person"
   },
   "settings": {
     "title": "Inställningar",
