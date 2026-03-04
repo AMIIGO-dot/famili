@@ -209,7 +209,10 @@
   },
   "aiParse": {
     "placeholder": "E.g. Emma football Tuesday 16:00 weekly",
-    "error": "Couldn't understand that — please try again."
+    "error": "Couldn't understand that — please try again.",
+    "listening": "Listening…",
+    "transcribing": "Processing…",
+    "micPermissionDenied": "Microphone access is required for voice input."
   },
   "paywall": {
     "memberLimitTitle": "Family limit reached",

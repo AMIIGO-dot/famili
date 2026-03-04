@@ -17,7 +17,9 @@
       "bundleIdentifier": "com.superdevver.familj",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "FAMILJ uses your microphone to let you speak event details out loud.",
+        "NSSpeechRecognitionUsageDescription": "FAMILJ transcribes your voice to create calendar events."
       }
     },
     "android": {
@@ -38,6 +40,12 @@
       "expo-font",
       "expo-notifications",
       "expo-secure-store",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "FAMILJ uses your microphone to let you speak event details out loud."
+        }
+      ],
       [
         "expo-build-properties",
         {

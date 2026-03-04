@@ -23,6 +23,22 @@ export interface ParsedEvent {
   eventType: 'activity' | 'homework' | 'test' | 'other';
 }
 
+/**
+ * Transcribe a base64-encoded audio recording via the `transcribe-audio` Edge Function.
+ * The Edge Function calls OpenAI Whisper under the hood.
+ */
+export async function transcribeAudio(
+  base64Audio: string,
+  language?: string
+): Promise<string> {
+  const { data, error } = await supabase.functions.invoke<{ text: string }>('transcribe-audio', {
+    body: { audio: base64Audio, mimeType: 'audio/m4a', language },
+  });
+  if (error) throw error;
+  if (!data?.text) throw new Error('Empty transcription');
+  return data.text;
+}
+
 export async function aiParseEvent(
   text: string,
   members: Array<{ id: string; name: string }>,

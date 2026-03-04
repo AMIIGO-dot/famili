@@ -16,8 +16,10 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import { useIsPremium } from '../lib/premium';
-import { aiParseEvent } from '../lib/aiParse';
+import { aiParseEvent, transcribeAudio } from '../lib/aiParse';
 import { usePurchaseStore } from '../stores/purchaseStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -123,6 +125,9 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const [aiMode, setAiMode] = useState(false);
   const [aiText, setAiText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
   // Scroll content to bottom when an expandable section opens
   useEffect(() => {
@@ -170,6 +175,16 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       setTimePickerTarget(null);
     }
   }, [visible, editEvent?.eventId]);
+
+  // Clean up any in-progress recording when the sheet closes
+  useEffect(() => {
+    if (!visible && recordingRef.current) {
+      recordingRef.current.stopAndUnloadAsync().catch(() => {});
+      recordingRef.current = null;
+      setIsRecording(false);
+      setIsTranscribing(false);
+    }
+  }, [visible]);
 
   const close = () => onClose();
 
@@ -269,8 +284,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
     ? convertUTCToLocal(editEvent.start, timezone)
     : lockedDate ?? null;
 
-  const handleAiParse = async () => {
-    const text = aiText.trim();
+  const handleAiParseText = async (text: string) => {
     if (!text || aiLoading) return;
     setAiLoading(true);
     try {
@@ -300,6 +314,50 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       Alert.alert(t('common.error'), t('aiParse.error'));
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const handleAiParse = () => handleAiParseText(aiText.trim());
+
+  const startRecording = async () => {
+    try {
+      const { granted } = await Audio.requestPermissionsAsync();
+      if (!granted) {
+        Alert.alert(t('common.error'), t('aiParse.micPermissionDenied'));
+        return;
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      setIsRecording(true);
+    } catch (err) {
+      console.warn('[Voice] startRecording error:', err);
+      Alert.alert(t('common.error'), t('aiParse.error'));
+    }
+  };
+
+  const stopRecordingAndTranscribe = async () => {
+    if (!recordingRef.current) return;
+    setIsRecording(false);
+    setIsTranscribing(true);
+    try {
+      await recordingRef.current.stopAndUnloadAsync();
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      const uri = recordingRef.current.getURI();
+      recordingRef.current = null;
+      if (!uri) throw new Error('No recording URI');
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const transcript = await transcribeAudio(base64, i18n.language);
+      setIsTranscribing(false);
+      await handleAiParseText(transcript);
+    } catch (err) {
+      console.warn('[Voice] transcription error:', err);
+      Alert.alert(t('common.error'), t('aiParse.error'));
+      setIsTranscribing(false);
     }
   };
 
@@ -442,29 +500,63 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
 
               {/* AI natural language input row */}
               {!editEvent && aiMode && (
-                <View style={styles.aiRow}>
-                  <Input
-                    style={styles.aiInput}
-                    placeholder={t('aiParse.placeholder')}
-                    value={aiText}
-                    onChangeText={setAiText}
-                    returnKeyType="send"
-                    onSubmitEditing={handleAiParse}
-                    autoFocus
-                    autoCapitalize="sentences"
-                    variant="ghost"
-                  />
+                <View style={[styles.aiRow, isRecording && styles.aiRowRecording]}>
+                  {isRecording ? (
+                    <View style={styles.aiRecordingIndicator}>
+                      <View style={styles.aiRecordingDot} />
+                      <Text style={styles.aiRecordingText}>{t('aiParse.listening')}</Text>
+                    </View>
+                  ) : isTranscribing ? (
+                    <View style={styles.aiRecordingIndicator}>
+                      <ActivityIndicator size="small" color="#44B57F" />
+                      <Text style={styles.aiTranscribingText}>{t('aiParse.transcribing')}</Text>
+                    </View>
+                  ) : (
+                    <Input
+                      style={styles.aiInput}
+                      placeholder={t('aiParse.placeholder')}
+                      value={aiText}
+                      onChangeText={setAiText}
+                      returnKeyType="send"
+                      onSubmitEditing={handleAiParse}
+                      autoFocus
+                      autoCapitalize="sentences"
+                      variant="ghost"
+                    />
+                  )}
+
+                  {/* Mic button */}
                   <TouchableOpacity
-                    style={[styles.aiSendBtn, (!aiText.trim() || aiLoading) && styles.aiSendBtnDisabled]}
-                    onPress={handleAiParse}
-                    disabled={!aiText.trim() || aiLoading}
+                    style={[styles.aiMicBtn, isRecording && styles.aiMicBtnActive]}
+                    onPress={isRecording ? stopRecordingAndTranscribe : startRecording}
+                    disabled={isTranscribing || aiLoading}
                     activeOpacity={0.7}
+                    hitSlop={8}
                   >
-                    {aiLoading
+                    {isTranscribing
                       ? <ActivityIndicator size="small" color="#44B57F" />
-                      : <Ionicons name="sparkles" size={17} color="#44B57F" />
+                      : <Ionicons
+                          name={isRecording ? 'stop-circle' : 'mic'}
+                          size={18}
+                          color={isRecording ? '#FF3B30' : '#44B57F'}
+                        />
                     }
                   </TouchableOpacity>
+
+                  {/* Send button — only when text is present */}
+                  {!isRecording && !isTranscribing && (
+                    <TouchableOpacity
+                      style={[styles.aiSendBtn, (!aiText.trim() || aiLoading) && styles.aiSendBtnDisabled]}
+                      onPress={handleAiParse}
+                      disabled={!aiText.trim() || aiLoading}
+                      activeOpacity={0.7}
+                    >
+                      {aiLoading
+                        ? <ActivityIndicator size="small" color="#44B57F" />
+                        : <Ionicons name="sparkles" size={17} color="#44B57F" />
+                      }
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
 
@@ -926,6 +1018,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D4EDDF',
   },
+  aiRowRecording: {
+    backgroundColor: '#FFF5F5',
+    borderColor: '#FFCDD2',
+  },
   aiInput: { flex: 1, fontSize: 14, color: '#2C2C2E' },
   aiSendBtn: {
     width: 30, height: 30,
@@ -935,6 +1031,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   aiSendBtnDisabled: { opacity: 0.4 },
+  aiMicBtn: {
+    width: 30, height: 30,
+    borderRadius: 9,
+    backgroundColor: '#E4F5EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiMicBtnActive: {
+    backgroundColor: '#FFE5E3',
+  },
+  aiRecordingIndicator: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingLeft: 4,
+    paddingVertical: 10,
+  },
+  aiRecordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF3B30',
+  },
+  aiRecordingText: {
+    fontSize: 14,
+    color: '#FF3B30',
+    fontWeight: '500',
+  },
+  aiTranscribingText: {
+    fontSize: 14,
+    color: '#44B57F',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
 
   // Locked recurrence chips
   recurrenceChipLocked: { borderColor: '#E5E5EA' },

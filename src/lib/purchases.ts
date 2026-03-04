@@ -28,6 +28,11 @@ if (!isPurchasesConfigured) {
 
 let _initialized = false;
 
+/** Returns true once Purchases.configure() has been called. */
+export function isSDKInitialized(): boolean {
+  return _initialized;
+}
+
 /**
  * Initialize RevenueCat SDK. Safe to call multiple times – idempotent.
  * Pass the authenticated Supabase user ID to link the RevenueCat customer

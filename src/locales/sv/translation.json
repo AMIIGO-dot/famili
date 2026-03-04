@@ -206,7 +206,10 @@
     "managedByOwnerSub": "Premium är aktivt via din familjeplan"  },
   "aiParse": {
     "placeholder": "T.ex. Emma fotboll tisdag 16:00 varje vecka",
-    "error": "Kunde inte tolka det \u2014 f\u00f6rs\u00f6k igen."
+    "error": "Kunde inte tolka det — försök igen.",
+    "listening": "Lyssnar…",
+    "transcribing": "Bearbetar…",
+    "micPermissionDenied": "Mikrofonåtkomst krävs för röstinmatning."
   },
   "paywall": {
     "memberLimitTitle": "Familjegr\u00e4nsen n\u00e5dd",

@@ -14,7 +14,7 @@ import type {
   PurchasesOfferings,
   PurchasesPackage,
 } from 'react-native-purchases';
-import { Purchases, isPurchasesConfigured } from '../lib/purchases';
+import { Purchases, isPurchasesConfigured, isSDKInitialized, initPurchases } from '../lib/purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 export { PAYWALL_RESULT };
@@ -164,6 +164,12 @@ export const usePurchaseStore = create<PurchaseState>((set) => ({
    */
   presentPaywall: async (entitlementId = PREMIUM_ENTITLEMENT): Promise<PAYWALL_RESULT> => {
     if (!isPurchasesConfigured) return PAYWALL_RESULT.NOT_PRESENTED;
+    // Ensure SDK is configured even if initPurchases hasn't completed yet
+    if (!isSDKInitialized()) {
+      const { useAuthStore } = await import('./authStore');
+      const userId = useAuthStore.getState().user?.id;
+      await initPurchases(userId);
+    }
     try {
       const result = await RevenueCatUI.presentPaywallIfNeeded({
         requiredEntitlementIdentifier: entitlementId,

@@ -207,8 +207,11 @@
     "managedByOwner": "Verwaltet vom Familienadmin",
     "managedByOwnerSub": "Premium ist über deinen Familieplan aktiv"  },
   "aiParse": {
-    "placeholder": "Z.B. Emma Fu\u00dfball Dienstag 16:00 w\u00f6chentlich",
-    "error": "Konnte das nicht verstehen \u2014 bitte erneut versuchen."
+    "placeholder": "Z.B. Emma Fußball Dienstag 16:00 wöchentlich",
+    "error": "Konnte das nicht verstehen — bitte erneut versuchen.",
+    "listening": "Höre zu…",
+    "transcribing": "Verarbeite…",
+    "micPermissionDenied": "Mikrofonzugriff wird für die Spracheingabe benötigt."
   },
   "paywall": {
     "memberLimitTitle": "Familienlimit erreicht",
