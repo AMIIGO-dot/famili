@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -342,7 +343,11 @@ function AboutPanel() {
     <ScrollView style={styles.panel} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 48 }}>
 
       <View style={styles.appBrand}>
-        <Text style={styles.appBrandName}>FAMILJ</Text>
+        <Image
+          source={require('../../assets/FAMILU app logo-green(1000 x 500 px) (1).png')}
+          style={styles.appBrandLogo}
+          resizeMode="contain"
+        />
         <Text style={styles.appBrandVersion}>{APP_VERSION}</Text>
       </View>
 
@@ -376,22 +381,11 @@ function AboutPanel() {
           icon="star-half-outline"
           iconColor="#44B57F"
           label={t('settings.rateApp')}
-          onPress={() => Alert.alert('Rate FAMILJ', 'Coming soon on the App Store')}
+          onPress={() => Alert.alert('Rate FAMILU', 'Coming soon on the App Store')}
           last
         />
       </Card>
 
-      <SectionHeader label={t('settings.acknowledgements')} />
-      <Card>
-        <Row
-          icon="code-slash-outline"
-          iconColor="#AEAEB2"
-          label={t('settings.openSource')}
-          sublabel={t('settings.openSourceSub')}
-          onPress={() => Alert.alert(t('settings.openSource'), 'Expo Â· Supabase Â· Zustand Â· date-fns Â· i18next Â· HeroUI')}
-          last
-        />
-      </Card>
 
       <Text style={styles.legalFooter}>{t('settings.copyright')}</Text>
 
@@ -562,7 +556,7 @@ const styles = StyleSheet.create({
 
   // About
   appBrand: { alignItems: 'center', paddingVertical: 24, gap: 4 },
-  appBrandName: { fontSize: 28, fontWeight: '900', color: '#2C2C2E', letterSpacing: 4 },
+  appBrandLogo: { width: 180, height: 90 },
   appBrandVersion: { fontSize: 12, color: '#AEAEB2', fontWeight: '500' },
   legalFooter: {
     textAlign: 'center',

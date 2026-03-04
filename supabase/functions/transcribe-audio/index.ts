@@ -36,8 +36,9 @@ Deno.serve(async (req) => {
     }
 
     const audioBlob = new Blob([bytes], { type: mimeType });
+    const ext = mimeType.includes('caf') ? 'caf' : mimeType.includes('wav') ? 'wav' : 'm4a';
     const formData = new FormData();
-    formData.append('file', audioBlob, 'recording.m4a');
+    formData.append('file', audioBlob, `recording.${ext}`);
     formData.append('model', 'whisper-1');
     // Pass the app language so Whisper returns text in the right language
     if (language && language !== 'en') {

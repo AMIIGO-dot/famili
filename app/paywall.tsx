@@ -66,7 +66,7 @@ function DevFallback({ onClose }: { onClose: () => void }) {
           <View style={styles.heroIcon}>
             <Ionicons name="star" size={32} color="#F5A623" />
           </View>
-          <Text style={styles.heroTitle}>FAMILJ Premium</Text>
+          <Text style={styles.heroTitle}>FAMILU Premium</Text>
           <Text style={styles.heroSub}>
             Everything your family needs, without limits.
           </Text>

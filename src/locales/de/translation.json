@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "FAMILJ",
+    "appName": "FAMILU",
     "cancel": "Abbrechen",
     "save": "Speichern",
     "delete": "Löschen",
@@ -24,7 +24,7 @@
     "orSignInWithApple": "Oder mit Apple anmelden"
   },
   "onboarding": {
-    "welcome": "Willkommen bei FAMILJ",
+    "welcome": "Willkommen bei FAMILU",
     "tagline": "Volle Kontrolle über deine Woche. Ohne Stress.",
     "chooseLanguage": "Sprache wählen",
     "step1Title": "Wie heißt eure Familie?",
@@ -130,11 +130,11 @@
     "privacyPolicy": "Datenschutzrichtlinie",
     "support": "Support",
     "contactSupport": "Support kontaktieren",
-    "rateApp": "FAMILJ bewerten",
+    "rateApp": "FAMILU bewerten",
     "acknowledgements": "Danksagungen",
     "openSource": "Open-Source-Bibliotheken",
     "openSourceSub": "Expo, Supabase, Zustand und mehr",
-    "copyright": "\u00a9 2026 FAMILJ. Alle Rechte vorbehalten."
+    "copyright": "\u00a9 2026 FAMILU. Alle Rechte vorbehalten."
   },
   "family": {
     "confirmDelete": "{{name}} aus der Familie entfernen?"
@@ -186,7 +186,7 @@
     "settings": "Einst."
   },
   "subscription": {
-    "premium": "FAMILJ Premium",
+    "premium": "FAMILU Premium",
     "currentPlan": "Aktueller Plan: {{plan}}",
     "planFree": "Kostenlos",
     "planMonthly": "Monatlich",

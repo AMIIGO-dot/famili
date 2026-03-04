@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "FAMILJ",
+    "appName": "FAMILU",
     "cancel": "Avbryt",
     "save": "Spara",
     "delete": "Ta bort",
@@ -24,7 +24,7 @@
     "orSignInWithApple": "Eller logga in med Apple"
   },
   "onboarding": {
-    "welcome": "Välkommen till FAMILJ",
+    "welcome": "Välkommen till FAMILU",
     "tagline": "Full koll på veckan. Utan stress.",
     "chooseLanguage": "Välj språk",
     "step1Title": "Vad heter er familj?",
@@ -130,11 +130,11 @@
     "privacyPolicy": "Integritetspolicy",
     "support": "Support",
     "contactSupport": "Kontakta support",
-    "rateApp": "Betygsätt FAMILJ",
+    "rateApp": "Betygsätt FAMILU",
     "acknowledgements": "Tack till",
     "openSource": "Öppna källbibliotek",
     "openSourceSub": "Expo, Supabase, Zustand och mer",
-    "copyright": "© 2026 FAMILJ. Alla rättigheter förbehållna."
+    "copyright": "© 2026 FAMILU. Alla rättigheter förbehållna."
   },
   "family": {
     "confirmDelete": "Ta bort {{name}} ur familjen?"
@@ -184,7 +184,7 @@
     "settings": "Inst."
   },
   "subscription": {
-    "premium": "FAMILJ Premium",
+    "premium": "FAMILU Premium",
     "currentPlan": "Nuvarande plan: {{plan}}",
     "planFree": "Gratis",
     "planMonthly": "Månadsvis",

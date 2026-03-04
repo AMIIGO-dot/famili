@@ -30,7 +30,7 @@ import { format, getISOWeek } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import {
   getWeekRangeByOffset,
   formatTime,
@@ -81,8 +81,14 @@ export default function WeeklyViewScreen() {
         const uri = recordingRef.current.getURI();
         recordingRef.current = null;
         if (!uri) throw new Error('No URI');
-        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
-        const transcript = await transcribeAudio(base64, i18n.language);
+        const ext = uri.split('.').pop()?.toLowerCase() ?? 'm4a';
+        const mimeType = ext === 'caf' ? 'audio/x-caf' : ext === 'wav' ? 'audio/wav' : 'audio/m4a';
+        console.log('[Voice FAB] uri:', uri, 'ext:', ext, 'mimeType:', mimeType);
+        // Read file as base64 using new expo-file-system File API (v19+)
+        const file = new File(uri);
+        const base64 = await file.base64();
+        console.log('[Voice FAB] base64 length:', base64.length);
+        const transcript = await transcribeAudio(base64, i18n.language, mimeType);
         const parsed = await aiParseEvent(
           transcript,
           members.map((m) => ({ id: m.id, name: m.name })),

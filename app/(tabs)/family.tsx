@@ -276,7 +276,6 @@ export default function FamilyScreen() {
                     placeholder={t('onboarding.memberNamePlaceholder', 'E.g. Emma')}
                     value={editing?.name ?? ''}
                     onChangeText={(v) => setEditing((e) => e ? { ...e, name: v } : e)}
-                    autoFocus
                     autoCapitalize="words"
                   />
                 </TextField>
@@ -382,7 +381,6 @@ export default function FamilyScreen() {
                         keyboardType="email-address"
                         autoCapitalize="none"
                         autoCorrect={false}
-                        autoFocus
                       />
                     </TextField>
                     <View style={styles.sheetBtns}>

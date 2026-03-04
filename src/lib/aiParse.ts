@@ -29,12 +29,30 @@ export interface ParsedEvent {
  */
 export async function transcribeAudio(
   base64Audio: string,
-  language?: string
+  language?: string,
+  mimeType = 'audio/m4a'
 ): Promise<string> {
-  const { data, error } = await supabase.functions.invoke<{ text: string }>('transcribe-audio', {
-    body: { audio: base64Audio, mimeType: 'audio/m4a', language },
+  const { data, error } = await supabase.functions.invoke<{ text: string; error?: string }>('transcribe-audio', {
+    body: { audio: base64Audio, mimeType, language },
   });
-  if (error) throw error;
+  if (error) {
+    // FunctionsHttpError: context is the raw Response — read body text for actual message
+    let msg = error.message;
+    try {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.text === 'function') {
+        const bodyText: string = await ctx.text();
+        console.warn('[transcribeAudio] raw error body:', bodyText);
+        try {
+          const body = JSON.parse(bodyText);
+          if (body?.error) msg = body.error;
+        } catch { msg = bodyText || msg; }
+      }
+    } catch {}
+    console.warn('[transcribeAudio] final error:', msg);
+    throw new Error(msg);
+  }
+  if (data?.error) throw new Error(data.error);
   if (!data?.text) throw new Error('Empty transcription');
   return data.text;
 }
@@ -47,7 +65,22 @@ export async function aiParseEvent(
   const { data, error } = await supabase.functions.invoke<ParsedEvent>('parse-event', {
     body: { text, members, timezone },
   });
-  if (error) throw error;
+  if (error) {
+    let msg = error.message;
+    try {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.text === 'function') {
+        const bodyText: string = await ctx.text();
+        console.warn('[aiParseEvent] raw error body:', bodyText);
+        try {
+          const body = JSON.parse(bodyText);
+          if (body?.error) msg = body.error;
+        } catch { msg = bodyText || msg; }
+      }
+    } catch {}
+    console.warn('[aiParseEvent] final error:', msg);
+    throw new Error(msg);
+  }
   if (!data) throw new Error('Empty response from AI');
   return data;
 }

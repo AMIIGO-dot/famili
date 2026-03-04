@@ -1,21 +1,22 @@
 {
   "expo": {
-    "name": "FAMILJ",
+    "name": "FAMILU",
     "slug": "familj",
     "scheme": "familj",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/FAMILU app icon (1).png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/FAMILU app logo-white(1000 x 500 px).png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#44B57F"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.superdevver.familj",
       "buildNumber": "1",
+      "icon": "./assets/FAMILU app icon (1).png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "FAMILJ uses your microphone to let you speak event details out loud.",
@@ -24,10 +25,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/FAMILU app icon (1).png",
+        "backgroundColor": "#44B57F"
       },
       "predictiveBackGestureEnabled": false
     },
