@@ -34,6 +34,7 @@ import { useIsPremium } from '../../src/lib/premium';
 import { usePurchaseStore } from '../../src/stores/purchaseStore';
 import { aiParseEvent, transcribeAudio, ParsedEvent } from '../../src/lib/aiParse';
 import EventCreateSheet from '../../src/components/EventCreateSheet';
+import VoiceProcessingOverlay from '../../src/components/VoiceProcessingOverlay';
 
 const ALL_ID = '__ALL__';
 
@@ -541,15 +542,12 @@ export default function TodayScreen() {
             style={[
               styles.fabMic,
               micState === 'recording' && styles.fabMicRecording,
-              micState === 'processing' && styles.fabMicProcessing,
             ]}
             activeOpacity={0.85}
             onPress={handleMicFab}
             disabled={micState === 'processing'}
           >
-            {micState === 'processing'
-              ? <Ionicons name="hourglass-outline" size={22} color="#fff" />
-              : micState === 'recording'
+            {micState === 'recording'
               ? <Ionicons name="stop-circle" size={24} color="#fff" />
               : <Ionicons name="mic" size={22} color={isPremium ? '#44B57F' : '#AEAEB2'} />
             }
@@ -573,6 +571,7 @@ export default function TodayScreen() {
         editEvent={pressedEvent}
         initialParsed={parsedEvent}
       />
+      <VoiceProcessingOverlay visible={micState === 'processing'} />
     </SafeAreaView>
   );
 }

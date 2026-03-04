@@ -75,7 +75,7 @@
     "typeActivity": "Activity",
     "typeHomework": "Homework",
     "typeTest": "Test",
-    "typeOther": "Other",
+    "typeOther": "Work",
     "forWhom": "For whom?",
     "reminderLabel": "Reminder",
     "reminderNone": "No reminder",
@@ -212,7 +212,8 @@
     "error": "Couldn't understand that — please try again.",
     "listening": "Listening…",
     "transcribing": "Processing…",
-    "micPermissionDenied": "Microphone access is required for voice input."
+    "micPermissionDenied": "Microphone access is required for voice input.",
+    "creatingPhrases": ["planning", "creating activity", "almost done"]
   },
   "paywall": {
     "memberLimitTitle": "Family limit reached",

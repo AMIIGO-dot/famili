@@ -44,6 +44,7 @@ import { useIsPremium } from '../../src/lib/premium';
 import { usePurchaseStore } from '../../src/stores/purchaseStore';
 import { aiParseEvent, transcribeAudio, ParsedEvent } from '../../src/lib/aiParse';
 import EventCreateSheet from '../../src/components/EventCreateSheet';
+import VoiceProcessingOverlay from '../../src/components/VoiceProcessingOverlay';
 
 const DAYS = 7;
 const ALL_ID = '__ALL__';
@@ -139,9 +140,9 @@ export default function WeeklyViewScreen() {
     opacity: opacity.value,
   }));
 
-  const SLIDE_OUT = 45;
-  const EXIT_MS   = 100;
-  const ENTER_MS  = 220;
+  const SLIDE_OUT = 40;
+  const EXIT_MS   = 70;
+  const ENTER_MS  = 130;
 
   const swipeGesture = Gesture.Pan()
     .runOnJS(true)
@@ -162,8 +163,8 @@ export default function WeeklyViewScreen() {
 
       if (!isDecisive) {
         // Snap back
-        translateX.value = withSpring(0, { damping: 22, stiffness: 340 });
-        opacity.value    = withTiming(1, { duration: 160 });
+        translateX.value = withSpring(0, { damping: 26, stiffness: 500 });
+        opacity.value    = withTiming(1, { duration: 100 });
         return;
       }
 
@@ -182,7 +183,7 @@ export default function WeeklyViewScreen() {
         setSelectedMemberId(nextId);
         translateX.value = goNext ? SLIDE_OUT : -SLIDE_OUT;
         opacity.value    = 0;
-        translateX.value = withSpring(0, { damping: 18, stiffness: 200 });
+        translateX.value = withSpring(0, { damping: 28, stiffness: 420 });
         opacity.value    = withTiming(1, { duration: ENTER_MS });
       }, EXIT_MS + 10);
     });
@@ -434,15 +435,12 @@ export default function WeeklyViewScreen() {
             style={[
               styles.fabMic,
               micState === 'recording' && styles.fabMicRecording,
-              micState === 'processing' && styles.fabMicProcessing,
             ]}
             activeOpacity={0.85}
             onPress={handleMicFab}
             disabled={micState === 'processing'}
           >
-            {micState === 'processing'
-              ? <Ionicons name="hourglass-outline" size={22} color="#fff" />
-              : micState === 'recording'
+            {micState === 'recording'
               ? <Ionicons name="stop-circle" size={24} color="#fff" />
               : <Ionicons name="mic" size={22} color={isPremium ? '#44B57F' : '#AEAEB2'} />
             }
@@ -467,6 +465,7 @@ export default function WeeklyViewScreen() {
         editEvent={pressedEvent}
         initialParsed={parsedEvent}
       />
+      <VoiceProcessingOverlay visible={micState === 'processing'} />
       </View>
     </SafeAreaView>
   );

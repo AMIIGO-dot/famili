@@ -75,7 +75,7 @@
     "typeActivity": "Aktivitet",
     "typeHomework": "Läxa",
     "typeTest": "Prov",
-    "typeOther": "Övrigt",
+    "typeOther": "Arbete",
     "forWhom": "Vem gäller det?",
     "reminderLabel": "Påminnelse",
     "reminderNone": "Ingen påminnelse",
@@ -209,7 +209,8 @@
     "error": "Kunde inte tolka det — försök igen.",
     "listening": "Lyssnar…",
     "transcribing": "Bearbetar…",
-    "micPermissionDenied": "Mikrofonåtkomst krävs för röstinmatning."
+    "micPermissionDenied": "Mikrofonåtkomst krävs för röstinmatning.",
+    "creatingPhrases": ["planerar", "skapar aktivitet", "nästan klar"]
   },
   "paywall": {
     "memberLimitTitle": "Familjegr\u00e4nsen n\u00e5dd",

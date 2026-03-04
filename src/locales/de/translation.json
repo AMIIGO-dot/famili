@@ -75,7 +75,7 @@
     "typeActivity": "Aktivität",
     "typeHomework": "Hausaufgaben",
     "typeTest": "Test",
-    "typeOther": "Sonstiges",
+    "typeOther": "Arbeit",
     "forWhom": "Für wen?",
     "reminderLabel": "Erinnerung",
     "reminderNone": "Keine Erinnerung",
@@ -211,7 +211,8 @@
     "error": "Konnte das nicht verstehen — bitte erneut versuchen.",
     "listening": "Höre zu…",
     "transcribing": "Verarbeite…",
-    "micPermissionDenied": "Mikrofonzugriff wird für die Spracheingabe benötigt."
+    "micPermissionDenied": "Mikrofonzugriff wird für die Spracheingabe benötigt.",
+    "creatingPhrases": ["plant", "erstellt Aktivität", "fast fertig"]
   },
   "paywall": {
     "memberLimitTitle": "Familienlimit erreicht",

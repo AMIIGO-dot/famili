@@ -68,7 +68,7 @@ export default function InviteSheet({ open, member, familyId, onClose }: Props) 
     : '--- ---';
 
   return (
-    <BottomSheet isOpen={open} onOpenChange={(v) => { if (!v) onClose(); }} snapPoints={['65%']}>
+    <BottomSheet isOpen={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <BottomSheet.Portal>
         <BottomSheet.Overlay />
         <BottomSheet.Content

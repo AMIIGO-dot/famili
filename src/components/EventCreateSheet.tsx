@@ -96,7 +96,14 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const isPremium = useIsPremium();
   const presentPaywall = usePurchaseStore((s) => s.presentPaywall);
 
-  const stripStart = useMemo(() => clampToToday(initialDate ?? new Date()), [initialDate]);
+  const stripStart = useMemo(() => {
+    if (editEvent) {
+      const d = convertUTCToLocal(editEvent.start, timezone);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    return clampToToday(initialDate ?? new Date());
+  }, [initialDate, editEvent?.eventId]);
   const dateStrip = useMemo(() => buildDateStrip(stripStart), [stripStart]);
 
   const today = new Date();
@@ -149,6 +156,11 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       setRecurrence(freq ?? 'none');
       setIsParentsOnly(editEvent.isParentsOnly ?? false);
       setReminderMinutes((editEvent.reminderMinutes ?? null) as ReminderValue);
+      // Select the event's day in the date strip
+      const midnight = new Date(localStart);
+      midnight.setHours(0, 0, 0, 0);
+      const idx = dateStrip.findIndex((d) => d.getTime() === midnight.getTime());
+      setSelectedDateIdx(idx >= 0 ? idx : 0);
     } else if (visible && !editEvent) {
       // Reset to defaults for new event
       setTitle('');
@@ -272,18 +284,14 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const startLabel = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
   const endLabel   = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
 
-  // Date shown in the locked badge — event's local date when editing, long-press date when creating
-  const badgeDate: Date | null = editEvent
-    ? convertUTCToLocal(editEvent.start, timezone)
-    : lockedDate ?? null;
+  // Date shown in the locked badge — only when a date was long-pressed to create (not when editing)
+  const badgeDate: Date | null = !editEvent ? (lockedDate ?? null) : null;
 
   const handleSave = async () => {
     if (!title.trim() || !family) return;
     setSaving(true);
     try {
-      const d = editEvent
-        ? convertUTCToLocal(editEvent.start, timezone)
-        : (lockedDate ?? dateStrip[selectedDateIdx]);
+      const d = lockedDate ?? dateStrip[selectedDateIdx];
       const start = new Date(d);
       start.setHours(startHour, startMinute, 0, 0);
       const end = new Date(d);

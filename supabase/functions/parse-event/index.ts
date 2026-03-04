@@ -101,7 +101,7 @@ Other rules:
 - For "every two weeks" / "biweekly" / "varannan vecka" → recurrence "biweekly"
 - For "weekdays" / "mon–fri" / "vardagar" → recurrence "weekdays"
 - Match member names case-insensitively; only include confident matches
-- eventType "homework" if mentions homework/läxa/Hausaufgabe; "test" if exam/prov/Prüfung; else "activity"`;
+- eventType "homework" if mentions homework/läxa/Hausaufgabe/Schulaufgabe; "test" if exam/prov/Prüfung/tentamen; "other" if any work/job signal — EN: work/working/works/job/office/meeting/conference/deadline/colleague/boss/shift; SV: arbete/arbetar/jobbar/jobb/jobbet/kontor/möte/konferens/deadline/kollega/chef/pass; DE: Arbeit/arbeite/arbeitet/arbeiten/Job/Büro/Besprechung/Konferenz/Kollege/Chef/Schicht; else "activity"`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
