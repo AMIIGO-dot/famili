@@ -5,6 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +15,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useIsPremium } from '../lib/premium';
+import { aiParseEvent } from '../lib/aiParse';
+import { usePurchaseStore } from '../stores/purchaseStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BottomSheet, Button, Input, Switch } from 'heroui-native';
@@ -88,6 +93,8 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const { createEvent, updateEvent, deleteEvent } = useEventsStore();
   const { timezone } = useSettingsStore();
   const { user } = useAuthStore();
+  const isPremium = useIsPremium();
+  const presentPaywall = usePurchaseStore((s) => s.presentPaywall);
 
   const stripStart = useMemo(() => clampToToday(initialDate ?? new Date()), [initialDate]);
   const dateStrip = useMemo(() => buildDateStrip(stripStart), [stripStart]);
@@ -111,6 +118,11 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const [reminderOpen, setReminderOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [timePickerTarget, setTimePickerTarget] = useState<'start' | 'end' | null>(null);
+
+  // AI natural language parsing
+  const [aiMode, setAiMode] = useState(false);
+  const [aiText, setAiText] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Scroll content to bottom when an expandable section opens
   useEffect(() => {
@@ -257,6 +269,40 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
     ? convertUTCToLocal(editEvent.start, timezone)
     : lockedDate ?? null;
 
+  const handleAiParse = async () => {
+    const text = aiText.trim();
+    if (!text || aiLoading) return;
+    setAiLoading(true);
+    try {
+      const parsed = await aiParseEvent(
+        text,
+        members.map((m) => ({ id: m.id, name: m.name })),
+        timezone
+      );
+      setTitle(parsed.title);
+      setStartHour(parsed.startHour);
+      setStartMinute(parsed.startMinute);
+      setEndHour(parsed.endHour);
+      setEndMinute(parsed.endMinute);
+      setEventType(parsed.eventType);
+      setSelectedMemberIds(parsed.memberIds);
+      // Gate advanced recurrence for free users
+      const rec = (parsed.recurrence === 'biweekly' || parsed.recurrence === 'weekdays') && !isPremium
+        ? 'weekly'
+        : parsed.recurrence;
+      setRecurrence(rec);
+      // Map date offset to strip index (strip starts at today)
+      const idx = Math.min(Math.max(parsed.dateOffsetDays ?? 0, 0), 89);
+      setSelectedDateIdx(idx);
+      setAiMode(false);
+      setAiText('');
+    } catch {
+      Alert.alert(t('common.error'), t('aiParse.error'));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!title.trim() || !family) return;
     setSaving(true);
@@ -373,8 +419,54 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                   returnKeyType="done"
                   variant="ghost"
                 />
+                {!editEvent && (
+                  <TouchableOpacity
+                    style={styles.aiBtn}
+                    onPress={() => {
+                      if (!isPremium) { void presentPaywall(); return; }
+                      setAiMode((v) => !v);
+                      setAiText('');
+                    }}
+                    activeOpacity={0.7}
+                    hitSlop={8}
+                  >
+                    <Ionicons
+                      name="sparkles-outline"
+                      size={18}
+                      color={aiMode ? '#44B57F' : (isPremium ? '#AEAEB2' : '#D1D1D6')}
+                    />
+                  </TouchableOpacity>
+                )}
                 <BottomSheet.Close />
               </View>
+
+              {/* AI natural language input row */}
+              {!editEvent && aiMode && (
+                <View style={styles.aiRow}>
+                  <Input
+                    style={styles.aiInput}
+                    placeholder={t('aiParse.placeholder')}
+                    value={aiText}
+                    onChangeText={setAiText}
+                    returnKeyType="send"
+                    onSubmitEditing={handleAiParse}
+                    autoFocus
+                    autoCapitalize="sentences"
+                    variant="ghost"
+                  />
+                  <TouchableOpacity
+                    style={[styles.aiSendBtn, (!aiText.trim() || aiLoading) && styles.aiSendBtnDisabled]}
+                    onPress={handleAiParse}
+                    disabled={!aiText.trim() || aiLoading}
+                    activeOpacity={0.7}
+                  >
+                    {aiLoading
+                      ? <ActivityIndicator size="small" color="#44B57F" />
+                      : <Ionicons name="sparkles" size={17} color="#44B57F" />
+                    }
+                  </TouchableOpacity>
+                </View>
+              )}
 
               {/* Type chips */}
               <View style={styles.typeRow}>
@@ -589,6 +681,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                 <View style={styles.recurrenceRow}>
                   {(['none', 'weekly', 'biweekly', 'weekdays'] as const).map((opt) => {
                     const sel = recurrence === opt;
+                    const locked = (opt === 'biweekly' || opt === 'weekdays') && !isPremium;
                     const labelKey = opt === 'none'
                       ? 'events.recurrenceNone'
                       : opt === 'weekly'
@@ -599,12 +692,27 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                     return (
                       <TouchableOpacity
                         key={opt}
-                        style={[styles.recurrenceChip, sel && styles.recurrenceChipSel]}
-                        onPress={() => { setRecurrence(opt); setRepeatOpen(false); }}
+                        style={[
+                          styles.recurrenceChip,
+                          sel && styles.recurrenceChipSel,
+                          locked && styles.recurrenceChipLocked,
+                        ]}
+                        onPress={() => {
+                          if (locked) { void presentPaywall(); return; }
+                          setRecurrence(opt);
+                          setRepeatOpen(false);
+                        }}
                       >
-                        <Text style={[styles.recurrenceChipText, sel && styles.recurrenceChipTextSel]}>
+                        <Text style={[
+                          styles.recurrenceChipText,
+                          sel && styles.recurrenceChipTextSel,
+                          locked && styles.recurrenceChipTextLocked,
+                        ]}>
                           {t(labelKey)}
                         </Text>
+                        {locked && (
+                          <Ionicons name="lock-closed" size={10} color="#C7C7CC" style={{ marginLeft: 3 }} />
+                        )}
                       </TouchableOpacity>
                     );
                   })}
@@ -803,4 +911,32 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 4 },
   saveHeroBtn: { flex: 1 },
   deleteHeroBtn: { flex: 1 },
+
+  // AI row
+  aiBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  aiRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    backgroundColor: '#F0F9F5',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#D4EDDF',
+  },
+  aiInput: { flex: 1, fontSize: 14, color: '#2C2C2E' },
+  aiSendBtn: {
+    width: 30, height: 30,
+    borderRadius: 9,
+    backgroundColor: '#E4F5EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiSendBtnDisabled: { opacity: 0.4 },
+
+  // Locked recurrence chips
+  recurrenceChipLocked: { borderColor: '#E5E5EA' },
+  recurrenceChipTextLocked: { color: '#C7C7CC' },
 });

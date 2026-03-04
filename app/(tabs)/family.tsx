@@ -20,6 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomSheet, Button, TextField, Input, Label } from 'heroui-native';
 import { useFamilyStore } from '../../src/stores/familyStore';
 import { useAuthStore } from '../../src/stores/authStore';
+import { useIsPremium } from '../../src/lib/premium';
+import { usePurchaseStore } from '../../src/stores/purchaseStore';
 import InviteSheet from '../../src/components/InviteSheet';
 import { sendParentInvite } from '../../src/lib/familyInviteService';
 
@@ -36,6 +38,8 @@ export default function FamilyScreen() {
   const { t } = useTranslation();
   const { family, members, addMember, updateMember, deleteMember, currentMemberRole, currentMember } = useFamilyStore();
   const { user } = useAuthStore();
+  const isPremium = useIsPremium();
+  const presentPaywall = usePurchaseStore((s) => s.presentPaywall);
   const insets = useSafeAreaInsets();
 
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -63,6 +67,17 @@ export default function FamilyScreen() {
   };
 
   const openAdd = () => {
+    if (!isPremium && members.length >= 4) {
+      Alert.alert(
+        t('paywall.memberLimitTitle'),
+        t('paywall.memberLimitBody'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('subscription.upgrade'), onPress: () => { void presentPaywall(); } },
+        ]
+      );
+      return;
+    }
     setEditing({ name: '', color: COLORS[members.length % COLORS.length], role: 'parent' });
     setSheetOpen(true);
   };

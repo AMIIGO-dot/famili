@@ -203,6 +203,12 @@
     "manageSubscriptionSub": "Återbetalningar, avslut & historik",
     "familyPremium": "Familj Premium",
     "managedByOwner": "Hanteras av familjeadmin",
-    "managedByOwnerSub": "Premium är aktivt via din familjeplan"
-  }
+    "managedByOwnerSub": "Premium är aktivt via din familjeplan"  },
+  "aiParse": {
+    "placeholder": "T.ex. Emma fotboll tisdag 16:00 varje vecka",
+    "error": "Kunde inte tolka det \u2014 f\u00f6rs\u00f6k igen."
+  },
+  "paywall": {
+    "memberLimitTitle": "Familjegr\u00e4nsen n\u00e5dd",
+    "memberLimitBody": "Gratisplanen st\u00f6der upp till 4 familjemedlemmar. Uppgradera till Premium f\u00f6r obegr\u00e4nsade medlemmar."  }
 }

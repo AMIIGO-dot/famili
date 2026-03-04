@@ -37,6 +37,8 @@ import { useEventsStore, EventOccurrence } from '../../src/stores/eventStore';
 import { useFamilyStore } from '../../src/stores/familyStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
+import { useIsPremium } from '../../src/lib/premium';
+import { usePurchaseStore } from '../../src/stores/purchaseStore';
 import EventCreateSheet from '../../src/components/EventCreateSheet';
 
 const DAYS = 7;
@@ -54,6 +56,10 @@ export default function WeeklyViewScreen() {
   const { family, members, currentMemberRole } = useFamilyStore();
   const { timezone, weekStartsOn, timeFormat } = useSettingsStore();
   const { fetchEventsForWeek, getOccurrencesForRange, isLoading } = useEventsStore();
+  const isPremium = useIsPremium();
+  const presentPaywall = usePurchaseStore((s) => s.presentPaywall);
+
+  const FREE_HISTORY_LIMIT = -2; // weeks
 
   const weekRange = getWeekRangeByOffset(weekOffset, weekStartsOn, timezone);
   const weekNumber = getISOWeek(weekRange.start);
@@ -188,10 +194,20 @@ export default function WeeklyViewScreen() {
         <View style={styles.headerNav}>
           <Pressable
             style={styles.navBtn}
-            onPress={() => setWeekOffset((w) => w - 1)}
+            onPress={() => {
+              if (!isPremium && weekOffset <= FREE_HISTORY_LIMIT) {
+                void presentPaywall();
+                return;
+              }
+              setWeekOffset((w) => w - 1);
+            }}
             hitSlop={10}
           >
-            <Ionicons name="chevron-back" size={20} color="#44B57F" />
+            <Ionicons
+              name="chevron-back"
+              size={20}
+              color={!isPremium && weekOffset <= FREE_HISTORY_LIMIT ? '#D1D1D6' : '#44B57F'}
+            />
           </Pressable>
           <View style={styles.navDivider} />
           <Pressable

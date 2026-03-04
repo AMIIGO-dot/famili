@@ -206,5 +206,13 @@
     "familyPremium": "Family Premium",
     "managedByOwner": "Managed by family admin",
     "managedByOwnerSub": "Premium is active via your family plan"
+  },
+  "aiParse": {
+    "placeholder": "E.g. Emma football Tuesday 16:00 weekly",
+    "error": "Couldn't understand that — please try again."
+  },
+  "paywall": {
+    "memberLimitTitle": "Family limit reached",
+    "memberLimitBody": "Free plan supports up to 4 family members. Upgrade to Premium for unlimited members."
   }
 }
