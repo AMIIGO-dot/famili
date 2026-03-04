@@ -5,7 +5,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -16,10 +15,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
 import { useIsPremium } from '../lib/premium';
-import { aiParseEvent, transcribeAudio } from '../lib/aiParse';
 import { usePurchaseStore } from '../stores/purchaseStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -79,9 +75,11 @@ interface Props {
   initialDate?: Date;
   lockedDate?: Date;
   editEvent?: EventOccurrence;
+  /** Pre-fill form with AI-parsed data (from voice FAB outside the sheet) */
+  initialParsed?: import('../lib/aiParse').ParsedEvent | null;
 }
 
-export default function EventCreateSheet({ visible, onClose, initialDate, lockedDate, editEvent }: Props) {
+export default function EventCreateSheet({ visible, onClose, initialDate, lockedDate, editEvent, initialParsed }: Props) {
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const inputRef = useRef<any>(null);
@@ -120,14 +118,6 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const [reminderOpen, setReminderOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [timePickerTarget, setTimePickerTarget] = useState<'start' | 'end' | null>(null);
-
-  // AI natural language parsing
-  const [aiMode, setAiMode] = useState(false);
-  const [aiText, setAiText] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const recordingRef = useRef<Audio.Recording | null>(null);
 
   // Scroll content to bottom when an expandable section opens
   useEffect(() => {
@@ -173,18 +163,21 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
       setReminderMinutes(null);
       setReminderOpen(false);
       setTimePickerTarget(null);
+      // Apply AI-parsed data if provided
+      if (initialParsed) {
+        setTitle(initialParsed.title);
+        setStartHour(initialParsed.startHour);
+        setStartMinute(initialParsed.startMinute);
+        setEndHour(initialParsed.endHour);
+        setEndMinute(initialParsed.endMinute);
+        setEventType(initialParsed.eventType);
+        setSelectedMemberIds(initialParsed.memberIds);
+        setRecurrence(initialParsed.recurrence);
+        const idx = Math.min(Math.max(initialParsed.dateOffsetDays ?? 0, 0), 89);
+        setSelectedDateIdx(idx);
+      }
     }
   }, [visible, editEvent?.eventId]);
-
-  // Clean up any in-progress recording when the sheet closes
-  useEffect(() => {
-    if (!visible && recordingRef.current) {
-      recordingRef.current.stopAndUnloadAsync().catch(() => {});
-      recordingRef.current = null;
-      setIsRecording(false);
-      setIsTranscribing(false);
-    }
-  }, [visible]);
 
   const close = () => onClose();
 
@@ -283,83 +276,6 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const badgeDate: Date | null = editEvent
     ? convertUTCToLocal(editEvent.start, timezone)
     : lockedDate ?? null;
-
-  const handleAiParseText = async (text: string) => {
-    if (!text || aiLoading) return;
-    setAiLoading(true);
-    try {
-      const parsed = await aiParseEvent(
-        text,
-        members.map((m) => ({ id: m.id, name: m.name })),
-        timezone
-      );
-      setTitle(parsed.title);
-      setStartHour(parsed.startHour);
-      setStartMinute(parsed.startMinute);
-      setEndHour(parsed.endHour);
-      setEndMinute(parsed.endMinute);
-      setEventType(parsed.eventType);
-      setSelectedMemberIds(parsed.memberIds);
-      // Gate advanced recurrence for free users
-      const rec = (parsed.recurrence === 'biweekly' || parsed.recurrence === 'weekdays') && !isPremium
-        ? 'weekly'
-        : parsed.recurrence;
-      setRecurrence(rec);
-      // Map date offset to strip index (strip starts at today)
-      const idx = Math.min(Math.max(parsed.dateOffsetDays ?? 0, 0), 89);
-      setSelectedDateIdx(idx);
-      setAiMode(false);
-      setAiText('');
-    } catch {
-      Alert.alert(t('common.error'), t('aiParse.error'));
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const handleAiParse = () => handleAiParseText(aiText.trim());
-
-  const startRecording = async () => {
-    try {
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) {
-        Alert.alert(t('common.error'), t('aiParse.micPermissionDenied'));
-        return;
-      }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      recordingRef.current = recording;
-      setIsRecording(true);
-    } catch (err) {
-      console.warn('[Voice] startRecording error:', err);
-      Alert.alert(t('common.error'), t('aiParse.error'));
-    }
-  };
-
-  const stopRecordingAndTranscribe = async () => {
-    if (!recordingRef.current) return;
-    setIsRecording(false);
-    setIsTranscribing(true);
-    try {
-      await recordingRef.current.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
-      if (!uri) throw new Error('No recording URI');
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const transcript = await transcribeAudio(base64, i18n.language);
-      setIsTranscribing(false);
-      await handleAiParseText(transcript);
-    } catch (err) {
-      console.warn('[Voice] transcription error:', err);
-      Alert.alert(t('common.error'), t('aiParse.error'));
-      setIsTranscribing(false);
-    }
-  };
 
   const handleSave = async () => {
     if (!title.trim() || !family) return;
@@ -477,88 +393,8 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                   returnKeyType="done"
                   variant="ghost"
                 />
-                {!editEvent && (
-                  <TouchableOpacity
-                    style={styles.aiBtn}
-                    onPress={() => {
-                      if (!isPremium) { void presentPaywall(); return; }
-                      setAiMode((v) => !v);
-                      setAiText('');
-                    }}
-                    activeOpacity={0.7}
-                    hitSlop={8}
-                  >
-                    <Ionicons
-                      name="sparkles-outline"
-                      size={18}
-                      color={aiMode ? '#44B57F' : (isPremium ? '#AEAEB2' : '#D1D1D6')}
-                    />
-                  </TouchableOpacity>
-                )}
                 <BottomSheet.Close />
               </View>
-
-              {/* AI natural language input row */}
-              {!editEvent && aiMode && (
-                <View style={[styles.aiRow, isRecording && styles.aiRowRecording]}>
-                  {isRecording ? (
-                    <View style={styles.aiRecordingIndicator}>
-                      <View style={styles.aiRecordingDot} />
-                      <Text style={styles.aiRecordingText}>{t('aiParse.listening')}</Text>
-                    </View>
-                  ) : isTranscribing ? (
-                    <View style={styles.aiRecordingIndicator}>
-                      <ActivityIndicator size="small" color="#44B57F" />
-                      <Text style={styles.aiTranscribingText}>{t('aiParse.transcribing')}</Text>
-                    </View>
-                  ) : (
-                    <Input
-                      style={styles.aiInput}
-                      placeholder={t('aiParse.placeholder')}
-                      value={aiText}
-                      onChangeText={setAiText}
-                      returnKeyType="send"
-                      onSubmitEditing={handleAiParse}
-                      autoFocus
-                      autoCapitalize="sentences"
-                      variant="ghost"
-                    />
-                  )}
-
-                  {/* Mic button */}
-                  <TouchableOpacity
-                    style={[styles.aiMicBtn, isRecording && styles.aiMicBtnActive]}
-                    onPress={isRecording ? stopRecordingAndTranscribe : startRecording}
-                    disabled={isTranscribing || aiLoading}
-                    activeOpacity={0.7}
-                    hitSlop={8}
-                  >
-                    {isTranscribing
-                      ? <ActivityIndicator size="small" color="#44B57F" />
-                      : <Ionicons
-                          name={isRecording ? 'stop-circle' : 'mic'}
-                          size={18}
-                          color={isRecording ? '#FF3B30' : '#44B57F'}
-                        />
-                    }
-                  </TouchableOpacity>
-
-                  {/* Send button — only when text is present */}
-                  {!isRecording && !isTranscribing && (
-                    <TouchableOpacity
-                      style={[styles.aiSendBtn, (!aiText.trim() || aiLoading) && styles.aiSendBtnDisabled]}
-                      onPress={handleAiParse}
-                      disabled={!aiText.trim() || aiLoading}
-                      activeOpacity={0.7}
-                    >
-                      {aiLoading
-                        ? <ActivityIndicator size="small" color="#44B57F" />
-                        : <Ionicons name="sparkles" size={17} color="#44B57F" />
-                      }
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
 
               {/* Type chips */}
               <View style={styles.typeRow}>
@@ -1006,66 +842,6 @@ const styles = StyleSheet.create({
 
   // AI row
   aiBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  aiRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-    backgroundColor: '#F0F9F5',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: '#D4EDDF',
-  },
-  aiRowRecording: {
-    backgroundColor: '#FFF5F5',
-    borderColor: '#FFCDD2',
-  },
-  aiInput: { flex: 1, fontSize: 14, color: '#2C2C2E' },
-  aiSendBtn: {
-    width: 30, height: 30,
-    borderRadius: 9,
-    backgroundColor: '#E4F5EC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiSendBtnDisabled: { opacity: 0.4 },
-  aiMicBtn: {
-    width: 30, height: 30,
-    borderRadius: 9,
-    backgroundColor: '#E4F5EC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiMicBtnActive: {
-    backgroundColor: '#FFE5E3',
-  },
-  aiRecordingIndicator: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingLeft: 4,
-    paddingVertical: 10,
-  },
-  aiRecordingDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#FF3B30',
-  },
-  aiRecordingText: {
-    fontSize: 14,
-    color: '#FF3B30',
-    fontWeight: '500',
-  },
-  aiTranscribingText: {
-    fontSize: 14,
-    color: '#44B57F',
-    fontWeight: '500',
-    marginLeft: 4,
-  },
 
   // Locked recurrence chips
   recurrenceChipLocked: { borderColor: '#E5E5EA' },

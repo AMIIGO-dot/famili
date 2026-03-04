@@ -5,8 +5,9 @@
  * Swipe left/right arrows navigate between weeks.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -28,6 +29,8 @@ import { useTranslation } from 'react-i18next';
 import { format, getISOWeek } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import {
   getWeekRangeByOffset,
   formatTime,
@@ -39,6 +42,7 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 import { useIsPremium } from '../../src/lib/premium';
 import { usePurchaseStore } from '../../src/stores/purchaseStore';
+import { aiParseEvent, transcribeAudio, ParsedEvent } from '../../src/lib/aiParse';
 import EventCreateSheet from '../../src/components/EventCreateSheet';
 
 const DAYS = 7;
@@ -51,6 +55,11 @@ export default function WeeklyViewScreen() {
   const [selectedMemberId, setSelectedMemberId] = useState<string>(ALL_ID);
   const [pressedDate, setPressedDate] = useState<Date | undefined>(undefined);
   const [pressedEvent, setPressedEvent] = useState<EventOccurrence | undefined>(undefined);
+  const [parsedEvent, setParsedEvent] = useState<ParsedEvent | null>(null);
+
+  // Voice recording state
+  const [micState, setMicState] = useState<'idle' | 'recording' | 'processing'>('idle');
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
   const { user } = useAuthStore();
   const { family, members, currentMemberRole } = useFamilyStore();
@@ -60,6 +69,54 @@ export default function WeeklyViewScreen() {
   const presentPaywall = usePurchaseStore((s) => s.presentPaywall);
 
   const FREE_HISTORY_LIMIT = -2; // weeks
+
+  const handleMicFab = async () => {
+    if (micState === 'recording') {
+      // Stop and transcribe
+      if (!recordingRef.current) return;
+      setMicState('processing');
+      try {
+        await recordingRef.current.stopAndUnloadAsync();
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+        const uri = recordingRef.current.getURI();
+        recordingRef.current = null;
+        if (!uri) throw new Error('No URI');
+        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+        const transcript = await transcribeAudio(base64, i18n.language);
+        const parsed = await aiParseEvent(
+          transcript,
+          members.map((m) => ({ id: m.id, name: m.name })),
+          timezone
+        );
+        setParsedEvent(parsed);
+        setPressedDate(undefined);
+        setPressedEvent(undefined);
+        setSheetVisible(true);
+      } catch (err) {
+        console.warn('[Voice FAB] error:', err);
+        Alert.alert(t('common.error'), t('aiParse.error'));
+      } finally {
+        setMicState('idle');
+        recordingRef.current = null;
+      }
+    } else if (micState === 'idle') {
+      if (!isPremium) { void presentPaywall(); return; }
+      try {
+        const { granted } = await Audio.requestPermissionsAsync();
+        if (!granted) { Alert.alert(t('common.error'), t('aiParse.micPermissionDenied')); return; }
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY
+        );
+        recordingRef.current = recording;
+        setMicState('recording');
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (err) {
+        console.warn('[Voice FAB] startRecording error:', err);
+        Alert.alert(t('common.error'), t('aiParse.error'));
+      }
+    }
+  };
 
   const weekRange = getWeekRangeByOffset(weekOffset, weekStartsOn, timezone);
   const weekNumber = getISOWeek(weekRange.start);
@@ -363,19 +420,46 @@ export default function WeeklyViewScreen() {
         </Animated.View>
       </GestureDetector>
 
-      {/* —— FAB —— only parents can create events */}
+      {/* —— FABs —— only parents can create events */}
       {currentMemberRole === 'parent' && (
-        <TouchableOpacity style={styles.fab} activeOpacity={0.85} onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)} onPress={() => { setPressedDate(undefined); setPressedEvent(undefined); setSheetVisible(true); }}>
-          <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
+        <View style={styles.fabGroup}>
+          {/* Mic FAB — voice-to-event (premium) */}
+          <TouchableOpacity
+            style={[
+              styles.fabMic,
+              micState === 'recording' && styles.fabMicRecording,
+              micState === 'processing' && styles.fabMicProcessing,
+            ]}
+            activeOpacity={0.85}
+            onPress={handleMicFab}
+            disabled={micState === 'processing'}
+          >
+            {micState === 'processing'
+              ? <Ionicons name="hourglass-outline" size={22} color="#fff" />
+              : micState === 'recording'
+              ? <Ionicons name="stop-circle" size={24} color="#fff" />
+              : <Ionicons name="mic" size={22} color={isPremium ? '#44B57F' : '#AEAEB2'} />
+            }
+          </TouchableOpacity>
+          {/* + FAB */}
+          <TouchableOpacity
+            style={styles.fab}
+            activeOpacity={0.85}
+            onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+            onPress={() => { setParsedEvent(null); setPressedDate(undefined); setPressedEvent(undefined); setSheetVisible(true); }}
+          >
+            <Text style={styles.fabIcon}>+</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       <EventCreateSheet
         visible={sheetVisible}
-        onClose={() => { setSheetVisible(false); setPressedDate(undefined); setPressedEvent(undefined); }}
+        onClose={() => { setSheetVisible(false); setPressedDate(undefined); setPressedEvent(undefined); setParsedEvent(null); }}
         initialDate={pressedDate ?? weekRange.start}
         lockedDate={pressedDate}
         editEvent={pressedEvent}
+        initialParsed={parsedEvent}
       />
       </View>
     </SafeAreaView>
@@ -539,10 +623,14 @@ const styles = StyleSheet.create({
   memberDotText: { fontSize: 9, fontWeight: '700', color: '#fff' },
 
   // FAB
-  fab: {
+  fabGroup: {
     position: 'absolute',
     bottom: 130,
     right: 24,
+    alignItems: 'center',
+    gap: 12,
+  },
+  fab: {
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -556,4 +644,27 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabIcon: { color: '#FAFAF8', fontSize: 28, lineHeight: 32, fontWeight: '300' },
+  fabMic: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#F0F0EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: '#E0E0E0',
+  },
+  fabMicRecording: {
+    backgroundColor: '#FF3B30',
+    borderColor: '#FF3B30',
+  },
+  fabMicProcessing: {
+    backgroundColor: '#F0F9F5',
+    borderColor: '#44B57F',
+  },
 });
