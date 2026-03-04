@@ -186,6 +186,8 @@
     "settings": "Einst."
   },
   "subscription": {
+    "premium": "FAMILJ Premium",
+    "currentPlan": "Aktueller Plan: {{plan}}",
     "planFree": "Kostenlos",
     "planMonthly": "Monatlich",
     "planYearly": "Jährlich",
@@ -200,6 +202,9 @@
     },
     "restorePurchases": "Käufe wiederherstellen",
     "manageSubscription": "Abonnement verwalten",
-    "manageSubscriptionSub": "Erstattungen, Kündigungen & Verlauf"
+    "manageSubscriptionSub": "Erstattungen, Kündigungen & Verlauf",
+    "familyPremium": "Familien-Premium",
+    "managedByOwner": "Verwaltet vom Familienadmin",
+    "managedByOwnerSub": "Premium ist über deinen Familieplan aktiv"
   }
 }

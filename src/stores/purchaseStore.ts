@@ -30,6 +30,52 @@ function deriveIsPremium(ci: CustomerInfo | null): boolean {
   return !!ci?.entitlements.active[PREMIUM_ENTITLEMENT];
 }
 
+/**
+ * Sync the owner's subscription to Supabase so family members (co-parents, kids)
+ * can inherit premium access without a RevenueCat account of their own.
+ * Acts as an in-app complement to the RevenueCat → Supabase webhook.
+ */
+async function syncSubscriptionToSupabase(customerInfo: CustomerInfo): Promise<void> {
+  try {
+    const { useAuthStore } = await import('./authStore');
+    const userId = useAuthStore.getState().user?.id;
+    if (!userId) return;
+
+    const { supabase } = await import('../lib/supabase');
+    const { Platform } = await import('react-native');
+
+    const entitlement = customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
+    const isActive = !!entitlement;
+    const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+
+    const productId = entitlement?.productIdentifier ?? '';
+    const plan = !isActive
+      ? 'free'
+      : productId.toLowerCase().includes('year') || productId.toLowerCase().includes('annual')
+        ? 'yearly'
+        : 'monthly';
+
+    await supabase
+      .from('subscriptions')
+      .upsert(
+        {
+          user_id: userId,
+          status: isActive ? 'active' : 'cancelled',
+          plan,
+          expires_at: entitlement?.expirationDate ?? null,
+          platform,
+        },
+        { onConflict: 'user_id' }
+      );
+
+    // Refresh family store so co-parents/kids reflect the new status immediately
+    const { useFamilyStore } = await import('./familyStore');
+    await useFamilyStore.getState().fetchSubscription(userId);
+  } catch (err) {
+    console.warn('[PurchaseStore] syncToSupabase error:', err);
+  }
+}
+
 interface PurchaseState {
   customerInfo: CustomerInfo | null;
   offerings: PurchasesOfferings | null;
@@ -85,6 +131,7 @@ export const usePurchaseStore = create<PurchaseState>((set) => ({
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       const isPremium = deriveIsPremium(customerInfo);
       set({ customerInfo, isPremium, isLoading: false });
+      void syncSubscriptionToSupabase(customerInfo);
       return isPremium;
     } catch (err: any) {
       if (!err.userCancelled) {
@@ -102,6 +149,7 @@ export const usePurchaseStore = create<PurchaseState>((set) => ({
       const customerInfo = await Purchases.restorePurchases();
       const isPremium = deriveIsPremium(customerInfo);
       set({ customerInfo, isPremium, isLoading: false });
+      void syncSubscriptionToSupabase(customerInfo);
       return isPremium;
     } catch (err: any) {
       set({ error: err?.message ?? 'Restore failed', isLoading: false });
@@ -124,6 +172,7 @@ export const usePurchaseStore = create<PurchaseState>((set) => ({
       // Refresh customer info after any paywall interaction
       const info = await Purchases.getCustomerInfo();
       set({ customerInfo: info, isPremium: deriveIsPremium(info) });
+      if (deriveIsPremium(info)) void syncSubscriptionToSupabase(info);
       return result;
     } catch (err) {
       console.warn('[PurchaseStore] presentPaywall error:', err);

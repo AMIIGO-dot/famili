@@ -202,6 +202,9 @@
     },
     "restorePurchases": "Restore Purchases",
     "manageSubscription": "Manage Subscription",
-    "manageSubscriptionSub": "Refunds, cancellations & history"
+    "manageSubscriptionSub": "Refunds, cancellations & history",
+    "familyPremium": "Family Premium",
+    "managedByOwner": "Managed by family admin",
+    "managedByOwnerSub": "Premium is active via your family plan"
   }
 }

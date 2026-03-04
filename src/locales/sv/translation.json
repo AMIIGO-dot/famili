@@ -184,6 +184,8 @@
     "settings": "Inst."
   },
   "subscription": {
+    "premium": "FAMILJ Premium",
+    "currentPlan": "Nuvarande plan: {{plan}}",
     "planFree": "Gratis",
     "planMonthly": "Månadsvis",
     "planYearly": "Årsvis",
@@ -198,6 +200,9 @@
     },
     "restorePurchases": "Återställ köp",
     "manageSubscription": "Hantera prenumeration",
-    "manageSubscriptionSub": "Återbetalningar, avslut & historik"
+    "manageSubscriptionSub": "Återbetalningar, avslut & historik",
+    "familyPremium": "Familj Premium",
+    "managedByOwner": "Hanteras av familjeadmin",
+    "managedByOwnerSub": "Premium är aktivt via din familjeplan"
   }
 }

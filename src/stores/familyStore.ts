@@ -68,6 +68,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         set({ family: ownedFamily });
         await get().fetchMembers();
         get().resolveCurrentMember(userId);
+        await get().fetchSubscription(ownedFamily.owner_id);
         return;
       }
 
@@ -92,6 +93,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         if (joinedFamily) {
           await get().fetchMembers();
           get().resolveCurrentMember(userId);
+          // Fetch the owner's subscription so all family members inherit premium status
+          await get().fetchSubscription(joinedFamily.owner_id);
         }
       } else {
         // No family found — hard clear all family data

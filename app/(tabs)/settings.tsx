@@ -229,7 +229,17 @@ function AccountPanel() {
   const router = useRouter();
   const { user, signOut } = useAuthStore();
   const { family, members } = useFamilyStore();
-  const { isPremium } = usePurchaseStore();
+  const { isPremium: rcIsPremium } = usePurchaseStore();
+
+  // Co-parents and kids inherit premium from the family owner via Supabase subscription
+  const familySubscription = useFamilyStore((s) => s.subscription);
+  const familyIsPremium = !!(
+    familySubscription?.status === 'active' && familySubscription?.plan !== 'free'
+  );
+  const isPremium = rcIsPremium || familyIsPremium;
+
+  // Only the family owner can purchase / manage the subscription
+  const isOwner = !family || family.owner_id === user?.id;
 
   const email = user?.email ?? '';
   const initial = email.charAt(0).toUpperCase();
@@ -268,23 +278,35 @@ function AccountPanel() {
 
       <SectionHeader label={t('settings.subscription')} />
       <Card>
-        <Row
-          icon="star-outline"
-          iconColor="#44B57F"
-          label={t('subscription.premium')}
-          sublabel={t('subscription.currentPlan', {
-            plan: t(isPremium ? 'subscription.planMonthly' : 'subscription.planFree'),
-          })}
-          onPress={() => router.push('/paywall')}
-        />
-        <Row
-          icon="headset-outline"
-          iconColor="#44B57F"
-          label={t('subscription.manageSubscription')}
-          sublabel={t('subscription.manageSubscriptionSub')}
-          onPress={() => router.push('/customer-center')}
-          last
-        />
+        {isOwner ? (
+          <>
+            <Row
+              icon="star-outline"
+              iconColor="#44B57F"
+              label={t('subscription.premium')}
+              sublabel={t('subscription.currentPlan', {
+                plan: t(isPremium ? 'subscription.planMonthly' : 'subscription.planFree'),
+              })}
+              onPress={() => router.push('/paywall')}
+            />
+            <Row
+              icon="headset-outline"
+              iconColor="#44B57F"
+              label={t('subscription.manageSubscription')}
+              sublabel={t('subscription.manageSubscriptionSub')}
+              onPress={() => router.push('/customer-center')}
+              last
+            />
+          </>
+        ) : (
+          <Row
+            icon={isPremium ? 'star' : 'star-outline'}
+            iconColor={isPremium ? '#F5A623' : '#AEAEB2'}
+            label={isPremium ? t('subscription.familyPremium') : t('subscription.planFree')}
+            sublabel={t('subscription.managedByOwner')}
+            last
+          />
+        )}
       </Card>
 
       <SectionHeader label={t('settings.account')} />
