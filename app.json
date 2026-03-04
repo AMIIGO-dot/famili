@@ -15,7 +15,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.superdevver.familj",
-      "buildNumber": "1",
       "icon": "./assets/FAMILU app icon (1).png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
