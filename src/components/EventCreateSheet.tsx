@@ -604,20 +604,29 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
 
               {/* REPEAT */}
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.repeatHeader} onPress={() => setRepeatOpen((v) => !v)} activeOpacity={0.7}>
-                <Text style={styles.sectionLabel}>{t('events.recurrenceLabel')}</Text>
+              <TouchableOpacity
+                style={styles.repeatHeader}
+                onPress={() => {
+                  if (!isPremium) { void presentPaywall(); return; }
+                  setRepeatOpen((v) => !v);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.sectionLabel}>{t('events.recurrenceLabel')}</Text>
+                  {!isPremium && <Ionicons name="lock-closed" size={11} color="#C7C7CC" />}
+                </View>
                 <View style={styles.repeatHeaderRight}>
                   {recurrence !== 'none' && !repeatOpen && (
                     <View style={styles.repeatActiveDot} />
                   )}
-                  <Text style={styles.repeatChevron}>{repeatOpen ? '▲' : '▼'}</Text>
+                  {isPremium && <Text style={styles.repeatChevron}>{repeatOpen ? '▲' : '▼'}</Text>}
                 </View>
               </TouchableOpacity>
-              {repeatOpen && (
+              {repeatOpen && isPremium && (
                 <View style={styles.recurrenceRow}>
                   {(['none', 'weekly', 'biweekly', 'weekdays'] as const).map((opt) => {
                     const sel = recurrence === opt;
-                    const locked = (opt === 'biweekly' || opt === 'weekdays') && !isPremium;
                     const labelKey = opt === 'none'
                       ? 'events.recurrenceNone'
                       : opt === 'weekly'
@@ -628,27 +637,12 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                     return (
                       <TouchableOpacity
                         key={opt}
-                        style={[
-                          styles.recurrenceChip,
-                          sel && styles.recurrenceChipSel,
-                          locked && styles.recurrenceChipLocked,
-                        ]}
-                        onPress={() => {
-                          if (locked) { void presentPaywall(); return; }
-                          setRecurrence(opt);
-                          setRepeatOpen(false);
-                        }}
+                        style={[styles.recurrenceChip, sel && styles.recurrenceChipSel]}
+                        onPress={() => { setRecurrence(opt); setRepeatOpen(false); }}
                       >
-                        <Text style={[
-                          styles.recurrenceChipText,
-                          sel && styles.recurrenceChipTextSel,
-                          locked && styles.recurrenceChipTextLocked,
-                        ]}>
+                        <Text style={[styles.recurrenceChipText, sel && styles.recurrenceChipTextSel]}>
                           {t(labelKey)}
                         </Text>
-                        {locked && (
-                          <Ionicons name="lock-closed" size={10} color="#C7C7CC" style={{ marginLeft: 3 }} />
-                        )}
                       </TouchableOpacity>
                     );
                   })}
