@@ -30,8 +30,8 @@ import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../src/i18n';
 // â”€â”€â”€ App metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const APP_VERSION = '0.1.0 (beta)';
 const LINKS = {
-  privacy: 'https://familj.app/privacy',
-  terms:   'https://familj.app/terms',
+  privacy: 'https://familu.app/privacy',
+  terms:   'https://familu.app/terms',
   support: 'mailto:hello@familj.app',
 };
 

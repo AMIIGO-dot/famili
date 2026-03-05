@@ -191,7 +191,9 @@
     "planFree": "Free",
     "planMonthly": "Monthly",
     "planYearly": "Yearly",
-    "upgrade": "Upgrade to Premium",
+    "upgrade": "Try free for 3 days",
+    "trialBadge": "3 days free",
+    "trialSub": "Then {{price}}/month — cancel anytime",
     "features": {
       "unlimitedMembers": "Unlimited family members",
       "aiParsing": "AI natural language parsing",
@@ -213,10 +215,12 @@
     "listening": "Listening…",
     "transcribing": "Processing…",
     "micPermissionDenied": "Microphone access is required for voice input.",
+    "rateLimitReached": "You've reached today's AI voice limit. Try again tomorrow.",
+    "recordingTooLong": "Recording stopped automatically (max 30 s).",
     "creatingPhrases": ["planning", "creating activity", "almost done"]
   },
   "paywall": {
     "memberLimitTitle": "Family limit reached",
-    "memberLimitBody": "Free plan supports up to 4 family members. Upgrade to Premium for unlimited members."
+    "memberLimitBody": "Free plan supports up to 4 family members. Try Premium free for 7 days for unlimited members."
   }
 }

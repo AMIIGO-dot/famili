@@ -189,7 +189,9 @@
     "planFree": "Gratis",
     "planMonthly": "Månadsvis",
     "planYearly": "Årsvis",
-    "upgrade": "Uppgradera till Premium",
+    "upgrade": "Prova gratis i 3 dagar",
+    "trialBadge": "3 dagar gratis",
+    "trialSub": "Sedan {{price}}/mån — avsluta när som helst",
     "features": {
       "unlimitedMembers": "Obegränsat antal familjemedlemmar",
       "aiParsing": "AI-tolkning av naturligt språk",
@@ -210,6 +212,8 @@
     "listening": "Lyssnar…",
     "transcribing": "Bearbetar…",
     "micPermissionDenied": "Mikrofonåtkomst krävs för röstinmatning.",
+    "rateLimitReached": "Du har nått dagens gräns för AI-röst. Försök igen imorgon.",
+    "recordingTooLong": "Inspelningen stoppades automatiskt (max 30 s).",
     "creatingPhrases": ["planerar", "skapar aktivitet", "nästan klar"]
   },
   "paywall": {

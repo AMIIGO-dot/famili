@@ -191,7 +191,9 @@
     "planFree": "Kostenlos",
     "planMonthly": "Monatlich",
     "planYearly": "Jährlich",
-    "upgrade": "Auf Premium upgraden",
+    "upgrade": "3 Tage kostenlos testen",
+    "trialBadge": "3 Tage kostenlos",
+    "trialSub": "Dann {{price}}/Monat — jederzeit kündbar",
     "features": {
       "unlimitedMembers": "Unbegrenzte Familienmitglieder",
       "aiParsing": "KI-Spracherkennung",
@@ -212,9 +214,11 @@
     "listening": "Höre zu…",
     "transcribing": "Verarbeite…",
     "micPermissionDenied": "Mikrofonzugriff wird für die Spracheingabe benötigt.",
+    "rateLimitReached": "Du hast das heutige KI-Sprachlimit erreicht. Versuche es morgen erneut.",
+    "recordingTooLong": "Aufnahme automatisch gestoppt (max. 30 S).",
     "creatingPhrases": ["plant", "erstellt Aktivität", "fast fertig"]
   },
   "paywall": {
     "memberLimitTitle": "Familienlimit erreicht",
-    "memberLimitBody": "Der kostenlose Plan unterst\u00fctzt bis zu 4 Familienmitglieder. Upgrade auf Premium f\u00fcr unbegrenzte Mitglieder."  }
+    "memberLimitBody": "Der kostenlose Plan unterstützt bis zu 4 Familienmitglieder. Teste Premium kostenlos für 7 Tage für unbegrenzte Mitglieder."  }
 }

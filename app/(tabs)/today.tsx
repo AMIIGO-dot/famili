@@ -33,6 +33,7 @@ import { convertUTCToLocal, formatTime } from '../../src/lib/time';
 import { useIsPremium } from '../../src/lib/premium';
 import { usePurchaseStore } from '../../src/stores/purchaseStore';
 import { aiParseEvent, transcribeAudio, ParsedEvent } from '../../src/lib/aiParse';
+import { canMakeAiCall, recordAiCall, MAX_RECORDING_SECONDS } from '../../src/lib/aiRateLimit';
 import EventCreateSheet from '../../src/components/EventCreateSheet';
 import VoiceProcessingOverlay from '../../src/components/VoiceProcessingOverlay';
 
@@ -182,9 +183,14 @@ export default function TodayScreen() {
   const [parsedEvent, setParsedEvent] = useState<ParsedEvent | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string>(ALL_ID);
 
+  const { session } = useAuthStore();
+
   // Voice recording
   const [micState, setMicState] = useState<'idle' | 'recording' | 'processing'>('idle');
   const recordingRef = useRef<Audio.Recording | null>(null);
+  const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Always points to the latest render's handleMicFab to avoid stale closures in timers
+  const handleMicFabRef = useRef<() => Promise<void>>(async () => {});
 
   // ── Staggered entrance animations ──────────────────────────────────────
   const brandEntrance   = useRef(new Animated.Value(0)).current;
@@ -246,6 +252,11 @@ export default function TodayScreen() {
   const handleMicFab = async () => {
     if (micState === 'recording') {
       if (!recordingRef.current) return;
+      // Clear auto-stop timer
+      if (autoStopTimerRef.current) {
+        clearTimeout(autoStopTimerRef.current);
+        autoStopTimerRef.current = null;
+      }
       setMicState('processing');
       try {
         await recordingRef.current.stopAndUnloadAsync();
@@ -266,6 +277,9 @@ export default function TodayScreen() {
           members.map((m) => ({ id: m.id, name: m.name })),
           timezone
         );
+        // Record successful AI call for rate limiting
+        const userId = session?.user?.id;
+        if (userId) void recordAiCall(userId);
         setParsedEvent(parsed);
         setPressedEvent(undefined);
         setSheetVisible(true);
@@ -278,6 +292,15 @@ export default function TodayScreen() {
       }
     } else if (micState === 'idle') {
       if (!isPremium) { void presentPaywall(); return; }
+      // Rate limit check
+      const userId = session?.user?.id;
+      if (userId) {
+        const allowed = await canMakeAiCall(userId);
+        if (!allowed) {
+          Alert.alert(t('common.error'), t('aiParse.rateLimitReached'));
+          return;
+        }
+      }
       try {
         const { granted } = await Audio.requestPermissionsAsync();
         if (!granted) { Alert.alert(t('common.error'), t('aiParse.micPermissionDenied')); return; }
@@ -288,12 +311,21 @@ export default function TodayScreen() {
         recordingRef.current = recording;
         setMicState('recording');
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        // Auto-stop after MAX_RECORDING_SECONDS
+        autoStopTimerRef.current = setTimeout(() => {
+          if (recordingRef.current) {
+            Alert.alert(t('common.error'), t('aiParse.recordingTooLong'));
+            void handleMicFabRef.current();
+          }
+        }, MAX_RECORDING_SECONDS * 1000);
       } catch (err) {
         console.warn('[Voice FAB] startRecording error:', err);
         Alert.alert(t('common.error'), t('aiParse.error'));
       }
     }
   };
+  // Keep ref in sync with latest render
+  handleMicFabRef.current = handleMicFab;
 
   useEffect(() => {
     if (family) {
