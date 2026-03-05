@@ -23,7 +23,7 @@ export { PAYWALL_RESULT };
  * Entitlement identifier as configured in the RevenueCat dashboard.
  * Dashboard → Entitlements → "pro" (display name: "Familu.app Pro")
  */
-const PREMIUM_ENTITLEMENT = 'pro';
+const PREMIUM_ENTITLEMENT = 'Familu.app Pro';
 
 /** Derive isPremium from a CustomerInfo object */
 function deriveIsPremium(ci: CustomerInfo | null): boolean {
