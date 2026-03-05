@@ -7,9 +7,9 @@
 import 'react-native-url-polyfill/auto';
 import '../global.css';
 import { useEffect } from 'react';
-import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { HeroUINativeProvider } from 'heroui-native';
@@ -23,6 +23,9 @@ import { usePurchaseStore } from '../src/stores/purchaseStore';
 import { initPurchases } from '../src/lib/purchases';
 import { requestNotificationPermission } from '../src/lib/notifications';
 import { supabase } from '../src/lib/supabase';
+
+// Keep the native splash screen visible until we know where to route
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { initialize, session, isInitialized, profile, user } = useAuthStore();
@@ -159,13 +162,16 @@ export default function RootLayout() {
   // This prevents the onboarding screen flashing for users who already have a family.
   const isReady = isInitialized && !familyLoading;
 
+  // Hide the native splash once ready — it already shows our logo + green bg
+  useEffect(() => {
+    if (isReady) SplashScreen.hideAsync();
+  }, [isReady]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <HeroUINativeProvider>
         <StatusBar style="dark" />
-        {!isReady ? (
-          <View style={{ flex: 1, backgroundColor: '#44B57F' }} />
-        ) : (
+        {isReady && (
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
