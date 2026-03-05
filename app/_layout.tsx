@@ -7,6 +7,7 @@
 import 'react-native-url-polyfill/auto';
 import '../global.css';
 import { useEffect } from 'react';
+import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
@@ -154,15 +155,23 @@ export default function RootLayout() {
     if (profile) loadFromProfile(profile);
   }, [profile]);
 
+  // Hold rendering until auth is initialized AND family load has settled.
+  // This prevents the onboarding screen flashing for users who already have a family.
+  const isReady = isInitialized && !familyLoading;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <HeroUINativeProvider>
         <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="customer-center" options={{ presentation: 'modal' }} />
-        </Stack>
+        {!isReady ? (
+          <View style={{ flex: 1, backgroundColor: '#44B57F' }} />
+        ) : (
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="customer-center" options={{ presentation: 'modal' }} />
+          </Stack>
+        )}
       </HeroUINativeProvider>
     </GestureHandlerRootView>
   );
