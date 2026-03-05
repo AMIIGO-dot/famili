@@ -42,12 +42,18 @@ export async function initPurchases(userId?: string): Promise<void> {
   if (!isPurchasesConfigured) return;
 
   if (!_initialized) {
-    if (__DEV__) {
-      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    try {
+      if (__DEV__) {
+        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      }
+      Purchases.configure({ apiKey: RC_API_KEY });
+      _initialized = true;
+      console.log('[Purchases] SDK configured');
+    } catch (err) {
+      // Expected in Expo Go — native RevenueCat module is not available
+      console.warn('[Purchases] configure() skipped (Expo Go or missing native module):', err);
+      return;
     }
-    Purchases.configure({ apiKey: RC_API_KEY });
-    _initialized = true;
-    console.log('[Purchases] SDK configured');
   }
 
   if (userId) {

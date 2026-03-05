@@ -17,6 +17,7 @@ interface FamilyState {
   members: Member[];
   subscription: Subscription | null;
   isLoading: boolean;
+  hasFetchedOnce: boolean;
 
   // Computed
   isPremium: boolean;
@@ -42,10 +43,11 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   members: [],
   subscription: null,
   isLoading: false,
+  hasFetchedOnce: false,
   currentMember: null,
   currentMemberRole: 'parent',
 
-  reset: () => set({ family: null, members: [], subscription: null, currentMember: null, currentMemberRole: 'parent', isLoading: false }),
+  reset: () => set({ family: null, members: [], subscription: null, currentMember: null, currentMemberRole: 'parent', isLoading: false, hasFetchedOnce: false }),
 
   get isPremium() {
     const sub = get().subscription;
@@ -103,7 +105,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     } catch (err) {
       console.error('[FamilyStore] fetchFamily error:', err);
     } finally {
-      set({ isLoading: false });
+      set({ isLoading: false, hasFetchedOnce: true });
     }
   },
 

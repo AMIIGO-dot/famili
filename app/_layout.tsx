@@ -30,7 +30,7 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const { initialize, session, isInitialized, profile, user } = useAuthStore();
   const { loadFromProfile, initLanguage } = useSettingsStore();
-  const { fetchFamily, family, isLoading: familyLoading, currentMemberRole, checkPendingInvite, reset: resetFamily } = useFamilyStore();
+  const { fetchFamily, family, isLoading: familyLoading, hasFetchedOnce, currentMemberRole, checkPendingInvite, reset: resetFamily } = useFamilyStore();
   const { pinVerified: childPinVerified } = useChildAuthStore();
   const { fetchCustomerInfo } = usePurchaseStore();
   const router = useRouter();
@@ -129,8 +129,8 @@ export default function RootLayout() {
       return;
     }
 
-    // Logged in — wait for family fetch to settle before deciding
-    if (familyLoading) return;
+    // Wait until the family fetch has settled at least once
+    if (familyLoading || !hasFetchedOnce) return;
 
     if (family) {
       // Has a family — boot them out of auth/onboarding/child-join screens
@@ -152,15 +152,15 @@ export default function RootLayout() {
       // No family yet — must complete onboarding
       if (!inOnboarding) router.replace('/onboarding');
     }
-  }, [session, isInitialized, familyLoading, family, segments, currentMemberRole, childPinVerified]);
+  }, [session, isInitialized, familyLoading, hasFetchedOnce, family, segments, currentMemberRole, childPinVerified]);
 
   useEffect(() => {
     if (profile) loadFromProfile(profile);
   }, [profile]);
 
   // Hold rendering until auth is initialized AND family load has settled.
-  // This prevents the onboarding screen flashing for users who already have a family.
-  const isReady = isInitialized && !familyLoading;
+  // For logged-out users, no family fetch occurs — isReady as soon as auth initializes.
+  const isReady = isInitialized && (!session || hasFetchedOnce);
 
   // Hide the native splash once ready — it already shows our logo + green bg
   useEffect(() => {
@@ -171,13 +171,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <HeroUINativeProvider>
         <StatusBar style="dark" />
-        {isReady && (
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="customer-center" options={{ presentation: 'modal' }} />
-          </Stack>
-        )}
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="customer-center" options={{ presentation: 'modal' }} />
+        </Stack>
       </HeroUINativeProvider>
     </GestureHandlerRootView>
   );
