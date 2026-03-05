@@ -11,6 +11,7 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { generateOccurrences } from '../lib/time';
 import type { Database } from '../lib/database.types';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -38,11 +39,15 @@ interface EventsState {
   // Actions
   fetchEventsForWeek: (familyId: string, rangeStart: Date, rangeEnd: Date) => Promise<void>;
   getOccurrencesForRange: (rangeStart: Date, rangeEnd: Date, role?: 'parent' | 'child') => EventOccurrence[];
-  createEvent: (event: EventInsert) => Promise<Event | null>;
+  createEvent: (event: EventInsert, createdByUserId?: string) => Promise<Event | null>;
   updateEvent: (id: string, updates: EventUpdate) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
+  subscribeToFamily: (familyId: string) => void;
+  unsubscribeFromFamily: () => void;
   reset: () => void;
 }
+
+let _realtimeChannel: RealtimeChannel | null = null;
 
 export const useEventsStore = create<EventsState>((set, get) => ({
   events: [],
@@ -141,7 +146,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
     return occurrences.sort((a, b) => a.start.getTime() - b.start.getTime());
   },
 
-  createEvent: async (event) => {
+  createEvent: async (event, createdByUserId) => {
     const { data, error } = await supabase
       .from('events')
       .insert(event)
@@ -154,6 +159,20 @@ export const useEventsStore = create<EventsState>((set, get) => ({
     }
 
     set((state) => ({ events: [...state.events, data] }));
+
+    // Notify other parents in the background (best-effort)
+    if (createdByUserId) {
+      supabase.functions
+        .invoke('notify-event', {
+          body: {
+            family_id: event.family_id,
+            event_title: event.title,
+            created_by_user_id: createdByUserId,
+          },
+        })
+        .catch((err) => console.warn('[EventsStore] notify-event error:', err));
+    }
+
     return data;
   },
 
@@ -183,5 +202,44 @@ export const useEventsStore = create<EventsState>((set, get) => ({
       return;
     }
     set((state) => ({ events: state.events.filter((e) => e.id !== id) }));
+  },
+
+  subscribeToFamily: (familyId) => {
+    // Clean up any existing channel first
+    if (_realtimeChannel) {
+      supabase.removeChannel(_realtimeChannel);
+      _realtimeChannel = null;
+    }
+
+    _realtimeChannel = supabase
+      .channel(`family-events-${familyId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'events', filter: `family_id=eq.${familyId}` },
+        (payload) => {
+          const newEvent = payload.new as Event;
+          set((state) => {
+            const exists = state.events.some((e) => e.id === newEvent.id);
+            if (exists) return state; // already added locally
+            return { events: [...state.events, newEvent] };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'events', filter: `family_id=eq.${familyId}` },
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          set((state) => ({ events: state.events.filter((e) => e.id !== deleted.id) }));
+        }
+      )
+      .subscribe();
+  },
+
+  unsubscribeFromFamily: () => {
+    if (_realtimeChannel) {
+      supabase.removeChannel(_realtimeChannel);
+      _realtimeChannel = null;
+    }
   },
 }));

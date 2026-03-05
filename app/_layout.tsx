@@ -21,7 +21,7 @@ import { useEventsStore } from '../src/stores/eventStore';
 import { useChildAuthStore } from '../src/stores/childAuthStore';
 import { usePurchaseStore } from '../src/stores/purchaseStore';
 import { initPurchases } from '../src/lib/purchases';
-import { requestNotificationPermission } from '../src/lib/notifications';
+import { requestNotificationPermission, savePushToken } from '../src/lib/notifications';
 import { supabase } from '../src/lib/supabase';
 
 // Keep the native splash screen visible until we know where to route
@@ -31,10 +31,21 @@ export default function RootLayout() {
   const { initialize, session, isInitialized, profile, user } = useAuthStore();
   const { loadFromProfile, initLanguage } = useSettingsStore();
   const { fetchFamily, family, isLoading: familyLoading, hasFetchedOnce, currentMemberRole, checkPendingInvite, reset: resetFamily } = useFamilyStore();
+  const { subscribeToFamily, unsubscribeFromFamily } = useEventsStore();
   const { pinVerified: childPinVerified } = useChildAuthStore();
   const { fetchCustomerInfo } = usePurchaseStore();
   const router = useRouter();
   const segments = useSegments();
+
+  // Subscribe to real-time event updates when family is loaded; unsubscribe on sign-out
+  useEffect(() => {
+    if (family?.id) {
+      subscribeToFamily(family.id);
+    } else {
+      unsubscribeFromFamily();
+    }
+    return () => { unsubscribeFromFamily(); };
+  }, [family?.id]);
 
   // Clear all user-scoped stores immediately when session is lost
   useEffect(() => {
@@ -54,6 +65,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (user?.id) {
       initPurchases(user.id).then(() => fetchCustomerInfo());
+      savePushToken(user.id);
     } else {
       // User logged out — clear purchase state
       usePurchaseStore.getState().reset();

@@ -337,7 +337,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
           recurrence_rule: recurrenceRule as any,
           is_parents_only: isParentsOnly,
           reminder_minutes: reminderMinutes,
-        });
+        }, user?.id);
         if (!created) throw new Error(t('common.error'));
         if (reminderMinutes) {
           await scheduleEventReminder({

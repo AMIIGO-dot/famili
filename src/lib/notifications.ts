@@ -8,7 +8,9 @@
  */
 
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { supabase } from './supabase';
 
 // ─── Permission ────────────────────────────────────────────────────────────────
 
@@ -105,3 +107,35 @@ export const REMINDER_OPTIONS = [
 ] as const;
 
 export type ReminderValue = (typeof REMINDER_OPTIONS)[number]['value'];
+
+// ─── Push token persistence ────────────────────────────────────────────────────
+
+/**
+ * Gets the Expo push token for this device and upserts it to Supabase
+ * so other family members can be notified cross-device.
+ * Safe to call on every login — idempotent.
+ */
+export async function savePushToken(userId: string): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const hasPermission = await requestNotificationPermission();
+    if (!hasPermission) return;
+
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      '377b3160-65ec-4d15-be0b-b222c3f4c1f7';
+
+    const { data: tokenData } = await Notifications.getExpoPushTokenAsync({ projectId });
+    if (!tokenData) return;
+
+    await supabase.from('push_tokens').upsert({
+      user_id: userId,
+      token: tokenData,
+      platform: Platform.OS,
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    // In Expo Go, getExpoPushTokenAsync may fail — safe to ignore
+    console.warn('[Notifications] savePushToken failed:', err);
+  }
+}
