@@ -44,17 +44,7 @@
           "microphonePermission": "FAMILJ uses your microphone to let you speak event details out loud."
         }
       ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "newArchEnabled": true
-          },
-          "android": {
-            "newArchEnabled": true
-          }
-        }
-      ],
+
       [
         "expo-widgets",
         {
@@ -63,12 +53,16 @@
             {
               "name": "TodayWidget",
               "displayName": "FAMILU Idag",
-              "description": "Se dagens aktiviteter och l\u00e4gg till nya med AI",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
+              "description": "Se dagens aktiviteter och lägg till nya med AI",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ]
             }
           ]
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
