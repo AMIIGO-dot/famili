@@ -78,11 +78,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       const deviceLocales = Intl.DateTimeFormat().resolvedOptions();
       const deviceLocale = deviceLocales.locale ?? 'en-US';
+      // Detect device language (sv/en/de), fall back to 'en'
+      const { getBestLanguage } = await import('../i18n');
+      const deviceLang = getBestLanguage(deviceLocale);
       const { data: created, error: insertErr } = await supabase
         .from('profiles')
         .insert({
           id: user.id,
-          language: 'en',
+          language: deviceLang,
           timezone: deviceTz,
           locale: deviceLocale,
           week_start_preference: 1,

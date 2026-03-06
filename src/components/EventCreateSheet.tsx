@@ -187,6 +187,9 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
         setRecurrence(initialParsed.recurrence);
         const idx = Math.min(Math.max(initialParsed.dateOffsetDays ?? 0, 0), 89);
         setSelectedDateIdx(idx);
+        if (initialParsed.reminderMinutes != null) {
+          setReminderMinutes(initialParsed.reminderMinutes as ReminderValue);
+        }
       }
     }
   }, [visible, editEvent?.eventId]);

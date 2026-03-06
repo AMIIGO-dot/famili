@@ -81,7 +81,8 @@ Extract the event from the user's text and return ONLY a valid JSON object with 
   "dateOffsetDays": number,  // use the calendar above to find the exact offset
   "recurrence": "none" | "weekly" | "biweekly" | "weekdays",
   "memberIds": string[],     // array of matched member IDs (empty if no match)
-  "eventType": "activity" | "homework" | "test" | "other"
+  "eventType": "activity" | "homework" | "test" | "other",
+  "reminderMinutes": 30 | 60 | 1440 | 2880 | null  // reminder before event; null if not mentioned
 }
 
 CRITICAL — date offset rules (use the calendar above to look up the exact offset):
@@ -101,6 +102,13 @@ Other rules:
 - For "every two weeks" / "biweekly" / "varannan vecka" → recurrence "biweekly"
 - For "weekdays" / "mon–fri" / "vardagar" → recurrence "weekdays"
 - Match member names case-insensitively; only include confident matches
+- Reminder rules (reminderMinutes):
+  - "remind me" / "påminn mig" / "erinnere mich" without specific time → 1440 (1 day before)
+  - "remind ... 30 minutes" / "30 min påminnelse" → 30
+  - "remind ... 1 hour" / "en timme innan" → 60
+  - "remind ... 1 day" / "dagen före" / "einen Tag vorher" → 1440
+  - "remind ... 2 days" / "två dagar före" / "zwei Tage vorher" → 2880
+  - No reminder mentioned → null
 - eventType "homework" if mentions homework/läxa/Hausaufgabe/Schulaufgabe; "test" if exam/prov/Prüfung/tentamen; "other" if any work/job signal — EN: work/working/works/job/office/meeting/conference/deadline/colleague/boss/shift; SV: arbete/arbetar/jobbar/jobb/jobbet/kontor/möte/konferens/deadline/kollega/chef/pass; DE: Arbeit/arbeite/arbeitet/arbeiten/Job/Büro/Besprechung/Konferenz/Kollege/Chef/Schicht; else "activity"`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -162,6 +170,7 @@ Other rules:
       recurrence: ['none', 'weekly', 'biweekly', 'weekdays'].includes(parsed.recurrence) ? parsed.recurrence : 'none',
       memberIds: Array.isArray(parsed.memberIds) ? parsed.memberIds.filter((id: unknown) => typeof id === 'string') : [],
       eventType: ['activity', 'homework', 'test', 'other'].includes(parsed.eventType) ? parsed.eventType : 'activity',
+      reminderMinutes: [30, 60, 1440, 2880].includes(parsed.reminderMinutes) ? parsed.reminderMinutes : null,
     };
 
     return new Response(JSON.stringify(result), {

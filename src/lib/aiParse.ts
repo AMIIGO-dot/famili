@@ -21,6 +21,8 @@ export interface ParsedEvent {
   recurrence: 'none' | 'weekly' | 'biweekly' | 'weekdays';
   memberIds: string[];
   eventType: 'activity' | 'homework' | 'test' | 'other';
+  /** minutes before event to fire a reminder: 30, 60, 1440 (1 day), 2880 (2 days), or null */
+  reminderMinutes: 30 | 60 | 1440 | 2880 | null;
 }
 
 /**
