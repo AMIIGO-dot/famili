@@ -30,14 +30,18 @@ export function updateTodayWidget(
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const TodayWidget = require('../widgets/TodayWidget').default as { updateSnapshot: (p: TodayWidgetProps) => void };
 
+    const now = new Date();
+
+    // Only show upcoming events (end time hasn't passed yet)
     const events: TodayWidgetEvent[] = occurrences
       .slice()
+      .filter((o) => o.end.getTime() > now.getTime())
       .sort((a, b) => a.start.getTime() - b.start.getTime())
       .slice(0, 6)
       .map((o) => ({
         title: o.title,
         time:  formatTime(o.start, timezone, false),
-        color: TYPE_COLOR[o.type ?? 'activity'] ?? '#44B57F',
+        color: TYPE_COLOR[o.type ?? 'activity'] ?? '#34A853',
       }));
 
     TodayWidget.updateSnapshot({ events, dateLabel, noEventsLabel, addAiLabel });
