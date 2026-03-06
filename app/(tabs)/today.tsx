@@ -36,6 +36,9 @@ import { aiParseEvent, transcribeAudio, ParsedEvent } from '../../src/lib/aiPars
 import { canMakeAiCall, recordAiCall, MAX_RECORDING_SECONDS } from '../../src/lib/aiRateLimit';
 import EventCreateSheet from '../../src/components/EventCreateSheet';
 import VoiceProcessingOverlay from '../../src/components/VoiceProcessingOverlay';
+import { format } from 'date-fns';
+import { sv as dateFnsSv, de as dateFnsDe, enUS } from 'date-fns/locale';
+import { updateTodayWidget } from '../../src/lib/widgetUpdater';
 
 const ALL_ID = '__ALL__';
 
@@ -238,7 +241,7 @@ export default function TodayScreen() {
   const { family, members } = useFamilyStore();
   const { currentMemberRole } = useFamilyStore();
   const { fetchEventsForWeek, getOccurrencesForRange } = useEventsStore();
-  const { timezone, timeFormat } = useSettingsStore();
+  const { timezone, timeFormat, widgetAiTrigger, setWidgetAiTrigger } = useSettingsStore();
   const isPremium = useIsPremium();
   const presentPaywall = usePurchaseStore((s) => s.presentPaywall);
 
@@ -341,6 +344,26 @@ export default function TodayScreen() {
   }, [family?.id]);
 
   const allOccurrences = getOccurrencesForRange(todayStart, todayEnd);
+
+  // Push today's events to the iOS home screen widget
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const _eventsKey = allOccurrences.map((o) => `${o.eventId}${o.start.getTime()}`).join('|');
+  useEffect(() => {
+    const localeMap = { sv: dateFnsSv, de: dateFnsDe, en: enUS };
+    const dateLocale = localeMap[i18n.language as keyof typeof localeMap] ?? enUS;
+    const localToday = convertUTCToLocal(new Date(), timezone);
+    const dateLabel = format(localToday, 'EEEE d MMMM', { locale: dateLocale });
+    updateTodayWidget(allOccurrences, timezone, dateLabel, t('today.noEvents'), t('widget.addWithAi'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_eventsKey, timezone, i18n.language]);
+
+  // Respond to widget "create-ai" button tap
+  useEffect(() => {
+    if (widgetAiTrigger && micState === 'idle') {
+      setWidgetAiTrigger(false);
+      void handleMicFabRef.current?.();
+    }
+  }, [widgetAiTrigger, micState]);
 
   const occurrences = (
     selectedMemberId === ALL_ID

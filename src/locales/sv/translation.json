@@ -228,6 +228,9 @@
     "recordingTooLong": "Inspelningen stoppades automatiskt (max 30 s).",
     "creatingPhrases": ["planerar", "skapar aktivitet", "nästan klar"]
   },
+  "widget": {
+    "addWithAi": "🎤 Lägg till med AI"
+  },
   "paywall": {
     "memberLimitTitle": "Familjegr\u00e4nsen n\u00e5dd",
     "memberLimitBody": "Gratisplanen st\u00f6der upp till 4 familjemedlemmar. Uppgradera till Premium f\u00f6r obegr\u00e4nsade medlemmar."  }

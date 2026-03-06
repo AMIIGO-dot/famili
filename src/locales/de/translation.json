@@ -230,6 +230,9 @@
     "recordingTooLong": "Aufnahme automatisch gestoppt (max. 30 S).",
     "creatingPhrases": ["plant", "erstellt Aktivität", "fast fertig"]
   },
+  "widget": {
+    "addWithAi": "🎤 Mit AI hinzufügen"
+  },
   "paywall": {
     "memberLimitTitle": "Familienlimit erreicht",
     "memberLimitBody": "Der kostenlose Plan unterstützt bis zu 4 Familienmitglieder. Teste Premium kostenlos für 7 Tage für unbegrenzte Mitglieder."  }

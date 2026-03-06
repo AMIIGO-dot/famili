@@ -231,6 +231,9 @@
     "recordingTooLong": "Recording stopped automatically (max 30 s).",
     "creatingPhrases": ["planning", "creating activity", "almost done"]
   },
+  "widget": {
+    "addWithAi": "🎤 Add with AI"
+  },
   "paywall": {
     "memberLimitTitle": "Family limit reached",
     "memberLimitBody": "Free plan supports up to 4 family members. Try Premium free for 7 days for unlimited members."

@@ -7,6 +7,7 @@
 import 'react-native-url-polyfill/auto';
 import '../global.css';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -36,6 +37,21 @@ export default function RootLayout() {
   const { fetchCustomerInfo } = usePurchaseStore();
   const router = useRouter();
   const segments = useSegments();
+
+  // Listen for widget button taps (iOS only) — 'create-ai' target opens voice recording
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    let sub: { remove: () => void } | null = null;
+    try {
+      const { addUserInteractionListener } = require('expo-widgets');
+      sub = addUserInteractionListener((e: { target: string }) => {
+        if (e.target === 'create-ai') {
+          useSettingsStore.getState().setWidgetAiTrigger(true);
+        }
+      });
+    } catch (_) {}
+    return () => sub?.remove();
+  }, []);
 
   // Subscribe to real-time event updates when family is loaded; unsubscribe on sign-out
   useEffect(() => {

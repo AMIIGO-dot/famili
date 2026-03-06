@@ -22,6 +22,10 @@ interface SettingsState {
   weekStartsOn: 0 | 1;
   timeFormat: '12h' | '24h';
 
+  // Widget AI trigger — set by the widget interaction listener in _layout.tsx,
+  // consumed by today.tsx to start the voice recording flow
+  widgetAiTrigger: boolean;
+
   // Actions
   loadFromProfile: (profile: Profile) => void;
   initLanguage: () => Promise<void>;
@@ -29,6 +33,7 @@ interface SettingsState {
   setTimezone: (tz: string, userId?: string) => Promise<void>;
   setWeekStartsOn: (day: 0 | 1, userId?: string) => Promise<void>;
   setTimeFormat: (fmt: '12h' | '24h', userId?: string) => Promise<void>;
+  setWidgetAiTrigger: (value: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -37,6 +42,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   locale: 'en-US',
   weekStartsOn: 1, // Monday default (ISO standard)
   timeFormat: '24h',
+  widgetAiTrigger: false,
 
   loadFromProfile: (profile) => {
     set({
@@ -93,4 +99,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       await supabase.from('profiles').update({ time_format_preference: fmt }).eq('id', userId);
     }
   },
+
+  setWidgetAiTrigger: (value) => set({ widgetAiTrigger: value }),
 }));
