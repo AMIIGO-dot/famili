@@ -5,7 +5,7 @@
  * to the home screen widget via expo-widgets. iOS only — safe to call from
  * anywhere; will no-op on Android/web.
  */
-import { Platform, NativeModules } from 'react-native';
+import { Platform } from 'react-native';
 import type { EventOccurrence } from '../stores/eventStore';
 import { formatTime } from './time';
 import type { TodayWidgetEvent, TodayWidgetProps } from '../widgets/TodayWidget';
@@ -25,8 +25,6 @@ export function updateTodayWidget(
   addAiLabel: string,
 ): void {
   if (Platform.OS !== 'ios') return;
-  // ExpoWidgets native module is only available in production/dev builds, not Expo Go
-  if (!NativeModules.ExpoWidgets) return;
   try {
     // Lazy require so Android/web bundles never load expo-widgets native module
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -43,6 +41,7 @@ export function updateTodayWidget(
       }));
 
     TodayWidget.updateSnapshot({ events, dateLabel, noEventsLabel, addAiLabel });
+    console.log('[widgetUpdater] snapshot written, events:', events.length);
   } catch (e) {
     console.warn('[widgetUpdater]', e);
   }
