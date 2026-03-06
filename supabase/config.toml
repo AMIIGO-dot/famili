@@ -1,0 +1,8 @@
+# Supabase project configuration
+# https://supabase.com/docs/guides/cli/config
+
+[functions.parse-event]
+verify_jwt = false
+
+[functions.transcribe-audio]
+verify_jwt = false
