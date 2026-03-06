@@ -20,7 +20,7 @@ import {
 import { Card } from 'heroui-native';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
-import { File } from 'expo-file-system';
+import * as LegacyFS from 'expo-file-system/legacy';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -267,9 +267,8 @@ export default function TodayScreen() {
         const ext = uri.split('.').pop()?.toLowerCase() ?? 'm4a';
         const mimeType = ext === 'caf' ? 'audio/x-caf' : ext === 'wav' ? 'audio/wav' : 'audio/m4a';
         console.log('[Voice FAB] uri:', uri, 'ext:', ext, 'mimeType:', mimeType);
-        // Read file as base64 using new expo-file-system File API (v19+)
-        const file = new File(uri);
-        const base64 = await file.base64();
+        // Read file as base64 using expo-file-system legacy API (reliable across v19)
+        const base64 = await LegacyFS.readAsStringAsync(uri, { encoding: LegacyFS.EncodingType.Base64 });
         console.log('[Voice FAB] base64 length:', base64.length);
         const transcript = await transcribeAudio(base64, i18n.language, mimeType);
         const parsed = await aiParseEvent(

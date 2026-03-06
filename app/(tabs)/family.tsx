@@ -317,14 +317,14 @@ export default function FamilyScreen() {
                   >
                     {t('common.cancel')}
                   </Button>
-                  <Button
-                    variant="primary"
-                    style={[styles.btnFlex, styles.btnGreen]}
-                    isDisabled={!editing?.name.trim()}
+                  <TouchableOpacity
+                    style={[styles.btnFlex, styles.btnGreen, styles.saveTouchBtn, !editing?.name.trim() && { opacity: 0.45 }]}
+                    disabled={!editing?.name.trim()}
                     onPress={handleSave}
+                    activeOpacity={0.8}
                   >
-                    {t('common.save')}
-                  </Button>
+                    <Text style={styles.saveTouchBtnText}>{t('common.save')}</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </KeyboardAvoidingView>
@@ -384,14 +384,14 @@ export default function FamilyScreen() {
                       />
                     </TextField>
                     <View style={styles.sheetBtns}>
-                      <Button
-                        variant="primary"
-                        style={[styles.btnFull, styles.btnGreen]}
-                        isDisabled={!parentInviteEmail.trim() || parentInviteSending}
+                      <TouchableOpacity
+                        style={[styles.btnFull, styles.btnGreen, styles.saveTouchBtn, (!parentInviteEmail.trim() || parentInviteSending) && { opacity: 0.45 }]}
+                        disabled={!parentInviteEmail.trim() || parentInviteSending}
                         onPress={handleSendParentInvite}
+                        activeOpacity={0.8}
                       >
-                        {parentInviteSending ? t('common.loading') : t('parentInvite.send')}
-                      </Button>
+                        <Text style={styles.saveTouchBtnText}>{parentInviteSending ? t('common.loading') : t('parentInvite.send')}</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.cancelLink}
                         onPress={() => setParentInviteOpen(false)}
@@ -565,6 +565,8 @@ const styles = StyleSheet.create({
   },
   btnFull: { width: '100%' },
   btnGreen: { backgroundColor: '#44B57F' },
+  saveTouchBtn: { borderRadius: 24, height: 48, alignItems: 'center', justifyContent: 'center' },
+  saveTouchBtnText: { color: '#FAFAF8', fontSize: 15, fontWeight: '600' },
   btnFlex: { flex: 1 },
   cancelLink: { alignItems: 'center', paddingVertical: 12 },
   cancelLinkText: { fontSize: 13, color: '#9999A6' },

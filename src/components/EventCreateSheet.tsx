@@ -709,14 +709,16 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                     {deleting ? '…' : t('events.deleteEvent')}
                   </Button>
                 )}
-                <Button
-                  variant="primary"
-                  style={styles.saveHeroBtn}
-                  isDisabled={!title.trim() || saving || (members.length > 0 && selectedMemberIds.length === 0)}
+                <TouchableOpacity
+                  style={[styles.saveHeroBtn, styles.saveGreenBtn, (!title.trim() || saving || (members.length > 0 && selectedMemberIds.length === 0)) && styles.saveGreenBtnDisabled]}
+                  disabled={!title.trim() || saving || (members.length > 0 && selectedMemberIds.length === 0)}
                   onPress={handleSave}
+                  activeOpacity={0.8}
                 >
-                  {saving ? '…' : editEvent ? t('events.saveChanges') : t('events.save')}
-                </Button>
+                  <Text style={styles.saveGreenBtnText}>
+                    {saving ? '…' : editEvent ? t('events.saveChanges') : t('events.save')}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
             </ScrollView>
@@ -852,6 +854,9 @@ const styles = StyleSheet.create({
   // Actions
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 4 },
   saveHeroBtn: { flex: 1 },
+  saveGreenBtn: { backgroundColor: '#44B57F', borderRadius: 24, height: 48, alignItems: 'center', justifyContent: 'center' },
+  saveGreenBtnText: { color: '#FAFAF8', fontSize: 15, fontWeight: '600' },
+  saveGreenBtnDisabled: { opacity: 0.45 },
   deleteHeroBtn: { flex: 1 },
 
   // AI row
