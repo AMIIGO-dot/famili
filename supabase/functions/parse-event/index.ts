@@ -74,6 +74,8 @@ Deno.serve(async (req) => {
       januar:1, februar:2, märz:3, marz:3, mai:5,
     };
     const specificDates: string[] = [];
+    // Track the best (first detected) specific-date override so we can correct GPT's output
+    let specificDateOffsetOverride: number | null = null;
     // Patterns: "20 Juni", "den 20 juni", "June 20", "am 20. Juni", "20. März"
     const datePattern = /\b(\d{1,2})\.?\s+([a-zA-ZäöüÄÖÜ]+)\b|\b([a-zA-ZäöüÄÖÜ]+)\s+(\d{1,2})\b/gi;
     let match: RegExpExecArray | null;
@@ -84,10 +86,13 @@ Deno.serve(async (req) => {
       const month = MONTH_MAP[monthStr];
       if (month && day >= 1 && day <= 31) {
         // Find the next occurrence of this month/day on or after today
+        const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const candidate = new Date(now.getFullYear(), month - 1, day);
-        if (candidate < now) candidate.setFullYear(candidate.getFullYear() + 1);
-        const offsetDays = Math.round((candidate.getTime() - new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) / 86400000);
+        if (candidate < todayMidnight) candidate.setFullYear(candidate.getFullYear() + 1);
+        const offsetDays = Math.round((candidate.getTime() - todayMidnight.getTime()) / 86400000);
         specificDates.push(`  "${match[0].trim()}" → offset ${offsetDays}: ${candidate.toISOString().split('T')[0]} (${DOW[candidate.getDay()]} / ${DOW_SV[candidate.getDay()]} / ${DOW_DE[candidate.getDay()]})`);
+        // Keep the first matched specific date as the authoritative override
+        if (specificDateOffsetOverride === null) specificDateOffsetOverride = offsetDays;
       }
     }
     if (specificDates.length > 0) {
@@ -204,7 +209,12 @@ Other rules:
       startMinute: typeof parsed.startMinute === 'number' ? parsed.startMinute : 0,
       endHour: typeof parsed.endHour === 'number' ? parsed.endHour : 16,
       endMinute: typeof parsed.endMinute === 'number' ? parsed.endMinute : 0,
-      dateOffsetDays: typeof parsed.dateOffsetDays === 'number' ? parsed.dateOffsetDays : 0,
+      // If a specific calendar date (e.g. "20 Juli") was detected in the input, use the
+      // server-pre-computed offset instead of trusting the LLM's arithmetic (which is
+      // prone to off-by-one errors for far-future dates).
+      dateOffsetDays: specificDateOffsetOverride !== null
+        ? specificDateOffsetOverride
+        : (typeof parsed.dateOffsetDays === 'number' ? parsed.dateOffsetDays : 0),
       recurrence: ['none', 'weekly', 'biweekly', 'weekdays'].includes(parsed.recurrence) ? parsed.recurrence : 'none',
       memberIds: Array.isArray(parsed.memberIds) ? parsed.memberIds.filter((id: unknown) => typeof id === 'string') : [],
       eventType: ['activity', 'homework', 'test', 'other'].includes(parsed.eventType) ? parsed.eventType : 'activity',
