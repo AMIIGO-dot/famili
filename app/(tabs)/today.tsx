@@ -291,7 +291,15 @@ export default function TodayScreen() {
         recordingRef.current = null;
       }
     } else if (micState === 'idle') {
-      if (!isPremium) { void presentPaywall(); return; }
+      if (!isPremium) {
+        await presentPaywall();
+        // Re-read fresh state from store — don't rely on stale hook value
+        const nowRC = usePurchaseStore.getState().isPremium;
+        const nowFamily = useFamilyStore.getState().subscription?.status === 'active'
+          && useFamilyStore.getState().subscription?.plan !== 'free';
+        if (!nowRC && !nowFamily) return; // user cancelled or purchase failed
+        // fall through → start recording immediately without extra tap
+      }
       // Rate limit check
       const userId = session?.user?.id;
       if (userId) {
