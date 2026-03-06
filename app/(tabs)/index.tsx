@@ -14,6 +14,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Pressable,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -61,6 +62,7 @@ export default function WeeklyViewScreen() {
   // Voice recording state
   const [micState, setMicState] = useState<'idle' | 'recording' | 'processing'>('idle');
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { user } = useAuthStore();
   const { family, members, currentMemberRole } = useFamilyStore();
@@ -68,6 +70,16 @@ export default function WeeklyViewScreen() {
   const { fetchEventsForWeek, getOccurrencesForRange, isLoading } = useEventsStore();
   const isPremium = useIsPremium();
   const presentPaywall = usePurchaseStore((s) => s.presentPaywall);
+
+  const onRefresh = async () => {
+    if (!family) return;
+    setRefreshing(true);
+    try {
+      await fetchEventsForWeek(family.id, weekRange.start, weekRange.end);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const FREE_HISTORY_LIMIT = -2; // weeks
 
@@ -325,6 +337,14 @@ export default function WeeklyViewScreen() {
           style={styles.scroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#44B57F"
+              colors={['#44B57F']}
+            />
+          }
         >
         <View style={styles.weekCard}>
           {days.map((day, idx) => {

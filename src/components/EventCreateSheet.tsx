@@ -53,7 +53,7 @@ function buildDateStrip(from: Date): Date[] {
   const days: Date[] = [];
   const start = new Date(from);
   start.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 730; i++) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
     days.push(d);
@@ -185,8 +185,12 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
         setEventType(initialParsed.eventType);
         setSelectedMemberIds(initialParsed.memberIds);
         setRecurrence(initialParsed.recurrence);
-        const idx = Math.min(Math.max(initialParsed.dateOffsetDays ?? 0, 0), 89);
+        const idx = Math.max(initialParsed.dateOffsetDays ?? 0, 0);
         setSelectedDateIdx(idx);
+        // Scroll date strip to show the selected date
+        setTimeout(() => {
+          dateScrollRef.current?.scrollTo({ x: Math.max(0, idx * 58 - 58), animated: false });
+        }, 50);
         if (initialParsed.reminderMinutes != null) {
           setReminderMinutes(initialParsed.reminderMinutes as ReminderValue);
         }
