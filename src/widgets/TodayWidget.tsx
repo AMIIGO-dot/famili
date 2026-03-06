@@ -1,17 +1,24 @@
 /**
  * FAMILU – Today Widget
  *
- * Shows today's activities and an AI voice creation button directly on
- * the iOS home screen. Rendered by the system using SwiftUI via @expo/ui.
+ * IMPORTANT – expo-widgets JSCore architecture:
+ * The native ExpoWidgets module serializes the TodayWidget function via
+ * .toString() and stores it in the App Group. The widget extension evaluates
+ * it inside JavaScriptCore (NOT the RN bridge) with only ExpoWidgets.bundle
+ * loaded, which assigns all @expo/ui/swift-ui components and modifiers to
+ * globalThis. Therefore:
  *
- * This component runs in a separate minimal JS runtime — only @expo/ui/swift-ui
- * components are allowed here. No React Native, no hooks, no i18next.
- * All display text is passed as props from the main app.
+ *  ✗ Do NOT use JSX — compiles to _jsxRuntime.jsx(...) closed-over variables
+ *  ✗ Do NOT reference import-based vars inside the function body — they are
+ *    closed-over CJS module variables that are undefined in JSCore
+ *  ✓ DO access all components/modifiers via globalThis inside the function body
+ *  ✓ DO call component functions directly instead of using JSX syntax
  */
-import { Button, HStack, Text, VStack } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, background, frame } from '@expo/ui/swift-ui/modifiers';
+
+// Type-only imports — erased at compile time, harmless in JSCore
 import { createWidget, type WidgetBase } from 'expo-widgets';
 
+// ─── Shared types (used by widgetUpdater.ts in the main app) ─────────────────
 export type TodayWidgetEvent = {
   title: string;
   time: string;   // "15:00"
@@ -25,108 +32,98 @@ export type TodayWidgetProps = {
   addAiLabel: string;     // e.g. "🎤 Lägg till med AI"
 };
 
-const GREEN      = '#44B57F';
-const GREEN_DARK  = '#2F8A60';
-const BG          = '#F0FAF5';   // very light green tint — always visible on home screen
-const DARK        = '#1A2E23';
-const MUTED       = '#6B8F7A';
-
+// ─── Widget component ─────────────────────────────────────────────────────────
+// All component/modifier references are resolved from globalThis at runtime so
+// the serialized function body is fully self-contained inside JSCore.
 const TodayWidget = (props: WidgetBase<TodayWidgetProps>) => {
   'widget';
 
-  // Defensive defaults — widget crashes if props.events is undefined
-  // (happens when no snapshot data has been stored in the App Group yet)
-  const events        = props.events        ?? [];
-  const dateLabel     = props.dateLabel     ?? '';
-  const noEventsLabel = props.noEventsLabel ?? '–';
-  const addAiLabel    = props.addAiLabel    ?? '🎤';
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const g = globalThis as any;
 
-  const isSmall = props.family === 'systemSmall';
+  // Components (assigned globally by ExpoWidgets.bundle)
+  const VStack = g.VStack;
+  const HStack = g.HStack;
+  const Text   = g.Text;
+  const Button = g.Button;
+
+  // Modifiers
+  const mFont            = g.font;
+  const mForegroundStyle = g.foregroundStyle;
+  const mBackground      = g.background;
+  const mPadding         = g.padding;
+  const mFrame           = g.frame;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  // Design tokens
+  const GREEN = '#44B57F';
+  const DARK  = '#1A2E23';
+  const MUTED = '#6B8F7A';
+  const BG    = '#ECF8F2';
+
+  // Safe prop defaults (undefined before first snapshot write)
+  const p = props as any; // eslint-disable-line
+  const events        = p.events        ?? [];
+  const dateLabel     = p.dateLabel     ?? '';
+  const noEventsLabel = p.noEventsLabel ?? '—';
+  const addAiLabel    = p.addAiLabel    ?? '🎤';
+
+  const isSmall = p.family === 'systemSmall';
   const shown   = events.slice(0, isSmall ? 2 : 4);
 
-  const rootModifiers = [
-    padding({ all: 14 }),
-    background(BG),
-    frame({ maxWidth: 9999, maxHeight: 9999 }),
+  // Root: solid BG + fill the full widget frame
+  const rootMods = [
+    mBackground(BG),
+    mFrame({ maxWidth: 10000, maxHeight: 10000 }),
+    mPadding({ all: 14 }),
   ];
 
-  if (isSmall) {
-    return (
-      <VStack spacing={5} modifiers={rootModifiers}>
-        {/* Brand + date */}
-        <Text modifiers={[font({ size: 10, weight: 'bold' }), foregroundStyle(GREEN_DARK)]}>
-          FAMILU
-        </Text>
-        <Text modifiers={[font({ size: 10 }), foregroundStyle(MUTED)]}>
-          {dateLabel}
-        </Text>
+  // Event rows — direct function calls, no JSX
+  const eventRows: any[] = shown.length === 0 // eslint-disable-line
+    ? [Text({
+        modifiers: [mFont({ size: 11 }), mForegroundStyle(MUTED)],
+        children: noEventsLabel,
+      })]
+    : shown.map((e: any, i: number) =>  // eslint-disable-line
+        HStack({
+          key: String(i),
+          spacing: 4,
+          children: [
+            Text({ modifiers: [mFont({ size: 8 }), mForegroundStyle(e.color ?? GREEN)], children: '●' }),
+            Text({ modifiers: [mFont({ size: isSmall ? 10 : 11 }), mForegroundStyle(DARK)], children: e.time + ' ' + e.title }),
+          ],
+        })
+      );
 
-        {/* Event rows */}
-        <VStack spacing={3}>
-          {shown.length === 0
-            ? <Text modifiers={[font({ size: 11 }), foregroundStyle(MUTED)]}>{noEventsLabel}</Text>
-            : shown.map((e, i) => (
-                <HStack key={i} spacing={3}>
-                  <Text modifiers={[font({ size: 8 }), foregroundStyle(e.color ?? GREEN)]}></Text>
-                  <Text modifiers={[font({ size: 10 }), foregroundStyle(DARK)]}>
-                    {e.time} {e.title}
-                  </Text>
-                </HStack>
-              ))
-          }
-        </VStack>
+  const header: any[] = isSmall // eslint-disable-line
+    ? [
+        Text({ modifiers: [mFont({ size: 10, weight: 'bold' }), mForegroundStyle(GREEN)], children: 'FAMILU' }),
+        Text({ modifiers: [mFont({ size: 9 }), mForegroundStyle(MUTED)], children: dateLabel }),
+      ]
+    : [
+        HStack({
+          spacing: 6,
+          children: [
+            Text({ modifiers: [mFont({ size: 13, weight: 'bold' }), mForegroundStyle(GREEN)], children: 'FAMILU' }),
+            Text({ modifiers: [mFont({ size: 11 }), mForegroundStyle(MUTED)], children: dateLabel }),
+          ],
+        }),
+      ];
 
-        {/* AI button */}
-        <Button
-          label={addAiLabel}
-          target="create-ai"
-          modifiers={[foregroundStyle(GREEN_DARK), font({ size: 12, weight: 'semibold' })]}
-          onPress={() => ({})}
-        />
-      </VStack>
-    );
-  }
-
-  // ── Medium layout (4×2) ──────────────────────────────────────────────────
-  return (
-    <VStack spacing={6} modifiers={rootModifiers}>
-      {/* Header */}
-      <HStack spacing={6}>
-        <Text modifiers={[font({ size: 13, weight: 'bold' }), foregroundStyle(GREEN_DARK)]}>
-          FAMILU
-        </Text>
-        <Text modifiers={[font({ size: 11 }), foregroundStyle(MUTED)]}>
-          {dateLabel}
-        </Text>
-      </HStack>
-
-      {/* Event list */}
-      <VStack spacing={4}>
-        {shown.length === 0
-          ? <Text modifiers={[font({ size: 12 }), foregroundStyle(MUTED)]}>{noEventsLabel}</Text>
-          : shown.map((e, i) => (
-              <HStack key={i} spacing={5}>
-                <Text modifiers={[font({ size: 10 }), foregroundStyle(e.color ?? GREEN)]}></Text>
-                <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(DARK)]}>
-                  {e.time}
-                </Text>
-                <Text modifiers={[font({ size: 12 }), foregroundStyle(DARK)]}>
-                  {e.title}
-                </Text>
-              </HStack>
-            ))
-        }
-      </VStack>
-
-      {/* AI button */}
-      <Button
-        label={addAiLabel}
-        target="create-ai"
-        modifiers={[foregroundStyle(GREEN_DARK), font({ size: 13, weight: 'semibold' })]}
-        onPress={() => ({})}
-      />
-    </VStack>
-  );
+  return VStack({
+    spacing: isSmall ? 5 : 6,
+    modifiers: rootMods,
+    children: [
+      ...header,
+      VStack({ spacing: 3, children: eventRows }),
+      Button({
+        label: addAiLabel,
+        target: 'create-ai',
+        modifiers: [mForegroundStyle(GREEN), mFont({ size: isSmall ? 11 : 12, weight: 'semibold' })],
+        onPress: () => ({}),
+      }),
+    ],
+  });
 };
 
 export default createWidget('TodayWidget', TodayWidget);
