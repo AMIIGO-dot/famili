@@ -606,8 +606,17 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
               <View style={styles.divider} />
               <TouchableOpacity
                 style={styles.repeatHeader}
-                onPress={() => {
-                  if (!isPremium) { void presentPaywall(); return; }
+                onPress={async () => {
+                  if (!isPremium) {
+                    await presentPaywall();
+                    // Re-read fresh store state — stale hook value can't be trusted mid-async
+                    const nowRC = usePurchaseStore.getState().isPremium;
+                    const nowSub = useFamilyStore.getState().subscription;
+                    const nowFamily = !!(nowSub?.status === 'active' && nowSub?.plan !== 'free');
+                    if (!nowRC && !nowFamily) return;
+                    setRepeatOpen(true);
+                    return;
+                  }
                   setRepeatOpen((v) => !v);
                 }}
                 activeOpacity={0.7}
