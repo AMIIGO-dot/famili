@@ -39,7 +39,7 @@
       "expo-notifications",
       "expo-secure-store",
       [
-        "expo-av",
+        "expo-audio",
         {
           "microphonePermission": "FAMILJ uses your microphone to let you speak event details out loud."
         }

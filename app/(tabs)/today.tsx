@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { Card } from 'heroui-native';
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, AudioModule, RecordingPresets } from 'expo-audio';
 import * as LegacyFS from 'expo-file-system/legacy';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -190,7 +190,7 @@ export default function TodayScreen() {
 
   // Voice recording
   const [micState, setMicState] = useState<'idle' | 'recording' | 'processing'>('idle');
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Always points to the latest render's handleMicFab to avoid stale closures in timers
   const handleMicFabRef = useRef<() => Promise<void>>(async () => {});
@@ -254,7 +254,7 @@ export default function TodayScreen() {
 
   const handleMicFab = async () => {
     if (micState === 'recording') {
-      if (!recordingRef.current) return;
+      if (!recorder.isRecording) return;
       // Clear auto-stop timer
       if (autoStopTimerRef.current) {
         clearTimeout(autoStopTimerRef.current);
@@ -262,10 +262,8 @@ export default function TodayScreen() {
       }
       setMicState('processing');
       try {
-        await recordingRef.current.stopAndUnloadAsync();
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-        const uri = recordingRef.current.getURI();
-        recordingRef.current = null;
+        await recorder.stop();
+        const uri = recorder.uri;
         if (!uri) throw new Error('No URI');
         const ext = uri.split('.').pop()?.toLowerCase() ?? 'm4a';
         const mimeType = ext === 'caf' ? 'audio/x-caf' : ext === 'wav' ? 'audio/wav' : 'audio/m4a';
@@ -290,7 +288,6 @@ export default function TodayScreen() {
         Alert.alert(t('common.error'), t('aiParse.error'));
       } finally {
         setMicState('idle');
-        recordingRef.current = null;
       }
     } else if (micState === 'idle') {
       if (!isPremium) {
@@ -312,18 +309,16 @@ export default function TodayScreen() {
         }
       }
       try {
-        const { granted } = await Audio.requestPermissionsAsync();
+        const { granted } = await AudioModule.requestRecordingPermissionsAsync();
         if (!granted) { Alert.alert(t('common.error'), t('aiParse.micPermissionDenied')); return; }
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-        const { recording } = await Audio.Recording.createAsync(
-          Audio.RecordingOptionsPresets.HIGH_QUALITY
-        );
-        recordingRef.current = recording;
+        await AudioModule.setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+        await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+        recorder.record();
         setMicState('recording');
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         // Auto-stop after MAX_RECORDING_SECONDS
         autoStopTimerRef.current = setTimeout(() => {
-          if (recordingRef.current) {
+          if (recorder.isRecording) {
             Alert.alert(t('common.error'), t('aiParse.recordingTooLong'));
             void handleMicFabRef.current();
           }

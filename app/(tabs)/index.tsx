@@ -29,7 +29,7 @@ import { useTranslation } from 'react-i18next';
 import { format, getISOWeek } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, AudioModule, RecordingPresets } from 'expo-audio';
 import { File } from 'expo-file-system';
 import {
   getWeekRangeByOffset,
@@ -60,7 +60,7 @@ export default function WeeklyViewScreen() {
 
   // Voice recording state
   const [micState, setMicState] = useState<'idle' | 'recording' | 'processing'>('idle');
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   const { user } = useAuthStore();
   const { family, members, currentMemberRole } = useFamilyStore();
@@ -74,13 +74,10 @@ export default function WeeklyViewScreen() {
   const handleMicFab = async () => {
     if (micState === 'recording') {
       // Stop and transcribe
-      if (!recordingRef.current) return;
       setMicState('processing');
       try {
-        await recordingRef.current.stopAndUnloadAsync();
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-        const uri = recordingRef.current.getURI();
-        recordingRef.current = null;
+        await recorder.stop();
+        const uri = recorder.uri;
         if (!uri) throw new Error('No URI');
         const ext = uri.split('.').pop()?.toLowerCase() ?? 'm4a';
         const mimeType = ext === 'caf' ? 'audio/x-caf' : ext === 'wav' ? 'audio/wav' : 'audio/m4a';
@@ -104,18 +101,15 @@ export default function WeeklyViewScreen() {
         Alert.alert(t('common.error'), t('aiParse.error'));
       } finally {
         setMicState('idle');
-        recordingRef.current = null;
       }
     } else if (micState === 'idle') {
       if (!isPremium) { void presentPaywall(); return; }
       try {
-        const { granted } = await Audio.requestPermissionsAsync();
+        const { granted } = await AudioModule.requestRecordingPermissionsAsync();
         if (!granted) { Alert.alert(t('common.error'), t('aiParse.micPermissionDenied')); return; }
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-        const { recording } = await Audio.Recording.createAsync(
-          Audio.RecordingOptionsPresets.HIGH_QUALITY
-        );
-        recordingRef.current = recording;
+        await AudioModule.setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+        await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+        recorder.record();
         setMicState('recording');
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       } catch (err) {
