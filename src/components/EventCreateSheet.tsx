@@ -24,6 +24,7 @@ import { useFamilyStore } from '../stores/familyStore';
 import { useEventsStore, EventOccurrence } from '../stores/eventStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useAuthStore } from '../stores/authStore';
+import { useShoppingStore } from '../stores/shoppingStore';
 import { convertUTCToLocal } from '../lib/time';
 import type { RecurrenceRule } from '../lib/time';
 import {
@@ -77,9 +78,11 @@ interface Props {
   editEvent?: EventOccurrence;
   /** Pre-fill form with AI-parsed data (from voice FAB outside the sheet) */
   initialParsed?: import('../lib/aiParse').ParsedEvent | null;
+  /** Called (parents only, edit mode only) to open the shopping list for this event */
+  onOpenShoppingList?: (eventId: string, eventTitle: string) => void;
 }
 
-export default function EventCreateSheet({ visible, onClose, initialDate, lockedDate, editEvent, initialParsed }: Props) {
+export default function EventCreateSheet({ visible, onClose, initialDate, lockedDate, editEvent, initialParsed, onOpenShoppingList }: Props) {
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const inputRef = useRef<any>(null);
@@ -95,6 +98,7 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
   const { user } = useAuthStore();
   const isPremium = useIsPremium();
   const presentPaywall = usePurchaseStore((s) => s.presentPaywall);
+  const listsByEventId = useShoppingStore((s) => s.listsByEventId);
 
   const stripStart = useMemo(() => {
     if (editEvent) {
@@ -701,6 +705,34 @@ export default function EventCreateSheet({ visible, onClose, initialDate, locked
                 </View>
               )}
 
+              {/* Shopping list — edit mode, parents only */}
+              {editEvent && currentMemberRole === 'parent' && (
+                <>
+                  <View style={styles.divider} />
+                  <TouchableOpacity
+                    style={styles.shoppingRow}
+                    onPress={() => {
+                      close();
+                      onOpenShoppingList?.(editEvent.eventId, title.trim() || editEvent.title);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.shoppingRowLeft}>
+                      <Text style={styles.shoppingRowEmoji}>🛒</Text>
+                      <View style={styles.shoppingRowTexts}>
+                        <Text style={styles.shoppingRowLabel}>{t('shopping.listTitle')}</Text>
+                        <Text style={styles.shoppingRowHint}>
+                          {listsByEventId[editEvent.eventId]
+                            ? t('shopping.viewList')
+                            : t('shopping.noListHint')}
+                        </Text>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#AEAEB2" />
+                  </TouchableOpacity>
+                </>
+              )}
+
               {/* Actions */}
               <View style={styles.actionRow}>
                 {editEvent && (
@@ -854,6 +886,19 @@ const styles = StyleSheet.create({
   reminderChipSel: { backgroundColor: '#F0FFF8', borderWidth: 1.5, borderColor: '#44B57F' },
   reminderChipTextSel: { color: '#1A6E46', fontWeight: '700' },
   reminderSummary: { fontSize: 11, fontWeight: '600', color: '#44B57F', marginRight: 4 },
+
+  // Shopping list row
+  shoppingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  shoppingRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  shoppingRowEmoji: { fontSize: 20 },
+  shoppingRowTexts: { flex: 1 },
+  shoppingRowLabel: { fontSize: 13, fontWeight: '600', color: '#2C2C2E' },
+  shoppingRowHint: { fontSize: 11, color: '#9999A6', marginTop: 1 },
 
   // Actions
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 4 },

@@ -237,5 +237,17 @@
   "paywall": {
     "memberLimitTitle": "Family limit reached",
     "memberLimitBody": "Free plan supports up to 4 family members. Try Premium free for 7 days for unlimited members."
+  },
+  "shopping": {
+    "listTitle": "Shopping list",
+    "noList": "No shopping list",
+    "noListHint": "Create a shopping list for this event",
+    "createList": "Create shopping list",
+    "addItem": "Add item…",
+    "emptyListHint": "Add items below",
+    "deleteItemConfirm": "Remove this item?",
+    "items": "{{count}} items",
+    "checked": "{{count}} checked",
+    "viewList": "Tap to open list"
   }
 }

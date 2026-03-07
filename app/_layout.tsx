@@ -21,6 +21,7 @@ import { useFamilyStore } from '../src/stores/familyStore';
 import { useEventsStore } from '../src/stores/eventStore';
 import { useChildAuthStore } from '../src/stores/childAuthStore';
 import { usePurchaseStore } from '../src/stores/purchaseStore';
+import { useShoppingStore } from '../src/stores/shoppingStore';
 import { initPurchases } from '../src/lib/purchases';
 import { requestNotificationPermission, savePushToken } from '../src/lib/notifications';
 import { supabase } from '../src/lib/supabase';
@@ -33,6 +34,7 @@ export default function RootLayout() {
   const { loadFromProfile, initLanguage } = useSettingsStore();
   const { fetchFamily, family, isLoading: familyLoading, hasFetchedOnce, currentMemberRole, checkPendingInvite, reset: resetFamily } = useFamilyStore();
   const { subscribeToFamily, unsubscribeFromFamily } = useEventsStore();
+  const { fetchListsForFamily } = useShoppingStore();
   const { pinVerified: childPinVerified } = useChildAuthStore();
   const { fetchCustomerInfo } = usePurchaseStore();
   const router = useRouter();
@@ -57,6 +59,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (family?.id) {
       subscribeToFamily(family.id);
+      // Fetch shopping lists for parent members (RLS returns empty for children)
+      if (currentMemberRole === 'parent') {
+        fetchListsForFamily(family.id);
+      }
     } else {
       unsubscribeFromFamily();
     }
@@ -68,6 +74,7 @@ export default function RootLayout() {
     if (!user) {
       resetFamily();
       useEventsStore.getState().reset();
+      useShoppingStore.getState().reset();
     }
   }, [user]);
 

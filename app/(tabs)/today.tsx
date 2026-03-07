@@ -32,9 +32,11 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { convertUTCToLocal, formatTime } from '../../src/lib/time';
 import { useIsPremium } from '../../src/lib/premium';
 import { usePurchaseStore } from '../../src/stores/purchaseStore';
+import { useShoppingStore } from '../../src/stores/shoppingStore';
 import { aiParseEvent, transcribeAudio, ParsedEvent } from '../../src/lib/aiParse';
 import { canMakeAiCall, recordAiCall, MAX_RECORDING_SECONDS } from '../../src/lib/aiRateLimit';
 import EventCreateSheet from '../../src/components/EventCreateSheet';
+import ShoppingListSheet from '../../src/components/ShoppingListSheet';
 import VoiceProcessingOverlay from '../../src/components/VoiceProcessingOverlay';
 import { format } from 'date-fns';
 import { sv as dateFnsSv, de as dateFnsDe, enUS } from 'date-fns/locale';
@@ -184,6 +186,9 @@ export default function TodayScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [pressedEvent, setPressedEvent] = useState<EventOccurrence | undefined>(undefined);
   const [parsedEvent, setParsedEvent] = useState<ParsedEvent | null>(null);
+  const [shoppingSheetVisible, setShoppingSheetVisible] = useState(false);
+  const [shoppingEventId, setShoppingEventId] = useState('');
+  const [shoppingEventTitle, setShoppingEventTitle] = useState('');
   const [selectedMemberId, setSelectedMemberId] = useState<string>(ALL_ID);
 
   const { session } = useAuthStore();
@@ -240,6 +245,7 @@ export default function TodayScreen() {
 
   const { family, members } = useFamilyStore();
   const { currentMemberRole } = useFamilyStore();
+  const listsByEventId = useShoppingStore((s) => s.listsByEventId);
   const { fetchEventsForWeek, getOccurrencesForRange } = useEventsStore();
   const { timezone, timeFormat, widgetAiTrigger, setWidgetAiTrigger } = useSettingsStore();
   const isPremium = useIsPremium();
@@ -546,6 +552,18 @@ export default function TodayScreen() {
                       <Card.Description style={styles.cardTime}>
                         {startStr}
                       </Card.Description>
+                      {currentMemberRole === 'parent' && listsByEventId[occ.eventId] && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setShoppingEventId(occ.eventId);
+                            setShoppingEventTitle(occ.title);
+                            setShoppingSheetVisible(true);
+                          }}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Text style={styles.cartBadge}>🛒</Text>
+                        </TouchableOpacity>
+                      )}
                     </Card.Header>
 
                     <Card.Body className="pt-0 gap-3">
@@ -627,6 +645,17 @@ export default function TodayScreen() {
         lockedDate={parsedEvent ? undefined : todayStart}
         editEvent={pressedEvent}
         initialParsed={parsedEvent}
+        onOpenShoppingList={(id, evtTitle) => {
+          setShoppingEventId(id);
+          setShoppingEventTitle(evtTitle);
+          setShoppingSheetVisible(true);
+        }}
+      />
+      <ShoppingListSheet
+        visible={shoppingSheetVisible}
+        onClose={() => { setShoppingSheetVisible(false); setShoppingEventId(''); setShoppingEventTitle(''); }}
+        eventId={shoppingEventId}
+        eventTitle={shoppingEventTitle}
       />
       <VoiceProcessingOverlay visible={micState === 'processing'} />
     </SafeAreaView>
@@ -783,6 +812,8 @@ const styles = StyleSheet.create({
   memberAvatar: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   memberAvatarText: { fontSize: 10, fontWeight: '700', color: '#fff' },
   memberName: { fontSize: 12, fontWeight: '600' },
+
+  cartBadge: { fontSize: 15 },
 
   textMuted: { color: '#AEAEB2' },
 

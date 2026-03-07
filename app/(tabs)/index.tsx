@@ -43,8 +43,10 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 import { useIsPremium } from '../../src/lib/premium';
 import { usePurchaseStore } from '../../src/stores/purchaseStore';
+import { useShoppingStore } from '../../src/stores/shoppingStore';
 import { aiParseEvent, transcribeAudio, ParsedEvent } from '../../src/lib/aiParse';
 import EventCreateSheet from '../../src/components/EventCreateSheet';
+import ShoppingListSheet from '../../src/components/ShoppingListSheet';
 import VoiceProcessingOverlay from '../../src/components/VoiceProcessingOverlay';
 
 const DAYS = 7;
@@ -58,6 +60,9 @@ export default function WeeklyViewScreen() {
   const [pressedDate, setPressedDate] = useState<Date | undefined>(undefined);
   const [pressedEvent, setPressedEvent] = useState<EventOccurrence | undefined>(undefined);
   const [parsedEvent, setParsedEvent] = useState<ParsedEvent | null>(null);
+  const [shoppingSheetVisible, setShoppingSheetVisible] = useState(false);
+  const [shoppingEventId, setShoppingEventId] = useState('');
+  const [shoppingEventTitle, setShoppingEventTitle] = useState('');
 
   // Voice recording state
   const [micState, setMicState] = useState<'idle' | 'recording' | 'processing'>('idle');
@@ -70,6 +75,7 @@ export default function WeeklyViewScreen() {
   const { fetchEventsForWeek, getOccurrencesForRange, isLoading } = useEventsStore();
   const isPremium = useIsPremium();
   const presentPaywall = usePurchaseStore((s) => s.presentPaywall);
+  const listsByEventId = useShoppingStore((s) => s.listsByEventId);
 
   const onRefresh = async () => {
     if (!family) return;
@@ -413,6 +419,18 @@ export default function WeeklyViewScreen() {
                               {evt.isParentsOnly && (
                                 <Text style={styles.lockIcon}>🔒</Text>
                               )}
+                              {currentMemberRole === 'parent' && listsByEventId[evt.eventId] && (
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    setShoppingEventId(evt.eventId);
+                                    setShoppingEventTitle(evt.title);
+                                    setShoppingSheetVisible(true);
+                                  }}
+                                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                  <Text style={styles.cartIcon}>🛒</Text>
+                                </TouchableOpacity>
+                              )}
                               <Text style={styles.eventTime}>{timeStr}</Text>
                             </View>
                           </View>
@@ -478,6 +496,17 @@ export default function WeeklyViewScreen() {
         lockedDate={pressedDate}
         editEvent={pressedEvent}
         initialParsed={parsedEvent}
+        onOpenShoppingList={(id, evtTitle) => {
+          setShoppingEventId(id);
+          setShoppingEventTitle(evtTitle);
+          setShoppingSheetVisible(true);
+        }}
+      />
+      <ShoppingListSheet
+        visible={shoppingSheetVisible}
+        onClose={() => { setShoppingSheetVisible(false); setShoppingEventId(''); setShoppingEventTitle(''); }}
+        eventId={shoppingEventId}
+        eventTitle={shoppingEventTitle}
       />
       <VoiceProcessingOverlay visible={micState === 'processing'} />
       </View>
@@ -630,6 +659,7 @@ const styles = StyleSheet.create({
   eventTitle: { fontSize: 13, fontWeight: '600', color: '#2C2C2E', flex: 1 },
   eventTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 6 },
   lockIcon: { fontSize: 10 },
+  cartIcon: { fontSize: 11 },
   eventTime: { fontSize: 11, color: '#9999A6' },
   memberDots: { flexDirection: 'row', gap: 4, marginTop: 5 },
   memberDot: {

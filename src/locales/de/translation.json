@@ -235,5 +235,18 @@
   },
   "paywall": {
     "memberLimitTitle": "Familienlimit erreicht",
-    "memberLimitBody": "Der kostenlose Plan unterstützt bis zu 4 Familienmitglieder. Teste Premium kostenlos für 7 Tage für unbegrenzte Mitglieder."  }
+    "memberLimitBody": "Der kostenlose Plan unterstützt bis zu 4 Familienmitglieder. Teste Premium kostenlos für 7 Tage für unbegrenzte Mitglieder."
+  },
+  "shopping": {
+    "listTitle": "Einkaufsliste",
+    "noList": "Keine Einkaufsliste",
+    "noListHint": "Erstelle eine Einkaufsliste für dieses Event",
+    "createList": "Einkaufsliste erstellen",
+    "addItem": "Artikel hinzufügen…",
+    "emptyListHint": "Füge unten Artikel hinzu",
+    "deleteItemConfirm": "Diesen Artikel entfernen?",
+    "items": "{{count}} Artikel",
+    "checked": "{{count}} abgehakt",
+    "viewList": "Tippen um Liste zu öffnen"
+  }
 }

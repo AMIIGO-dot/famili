@@ -16,6 +16,24 @@ export type Json =
 
 export type EventType = 'activity' | 'homework' | 'test' | 'other';
 export type MemberRole = 'parent' | 'child';
+
+export interface ShoppingList {
+  id: string;
+  family_id: string;
+  event_id: string;
+  created_by: string;
+  created_at: string;
+}
+
+export interface ShoppingListItem {
+  id: string;
+  list_id: string;
+  text: string;
+  is_checked: boolean;
+  checked_by: string | null;
+  sort_order: number;
+  created_at: string;
+}
 export type SubscriptionStatus = 'active' | 'expired' | 'trial' | 'cancelled';
 export type SubscriptionPlan = 'free' | 'monthly' | 'yearly';
 export type SubscriptionPlatform = 'ios' | 'android';
@@ -203,6 +221,37 @@ export type Database = {
         Update: {
           used_by?: string | null;
           used_at?: string | null;
+        };
+        Relationships: [];
+      };
+      shopping_lists: {
+        Row: ShoppingList;
+        Insert: {
+          id?: string;
+          family_id: string;
+          event_id: string;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      shopping_list_items: {
+        Row: ShoppingListItem;
+        Insert: {
+          id?: string;
+          list_id: string;
+          text: string;
+          is_checked?: boolean;
+          checked_by?: string | null;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          text?: string;
+          is_checked?: boolean;
+          checked_by?: string | null;
+          sort_order?: number;
         };
         Relationships: [];
       };

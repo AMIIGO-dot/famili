@@ -232,6 +232,19 @@
     "addWithAi": "Lägg till"
   },
   "paywall": {
-    "memberLimitTitle": "Familjegr\u00e4nsen n\u00e5dd",
-    "memberLimitBody": "Gratisplanen st\u00f6der upp till 4 familjemedlemmar. Uppgradera till Premium f\u00f6r obegr\u00e4nsade medlemmar."  }
+    "memberLimitTitle": "Familjegränsen nådd",
+    "memberLimitBody": "Gratisplanen stöder upp till 4 familjemedlemmar. Uppgradera till Premium för obegränsade medlemmar."
+  },
+  "shopping": {
+    "listTitle": "Inköpslista",
+    "noList": "Ingen inköpslista",
+    "noListHint": "Skapa en inköpslista för det här eventet",
+    "createList": "Skapa inköpslista",
+    "addItem": "Lägg till vara…",
+    "emptyListHint": "Lägg till varor nedan",
+    "deleteItemConfirm": "Ta bort varan?",
+    "items": "{{count}} varor",
+    "checked": "{{count}} ikryssade",
+    "viewList": "Tryck för att öppna lista"
+  }
 }
