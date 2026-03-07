@@ -31,6 +31,10 @@
     "production": {
       "ios": {
         "ascAppId": "6760020070"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./familu-489522-4def5135601c.json",
+        "track": "internal"
       }
     }
   }

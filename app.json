@@ -23,11 +23,17 @@
       }
     },
     "android": {
+      "package": "com.superdevver.familj",
       "adaptiveIcon": {
         "foregroundImage": "./assets/FAMILU app icon (1).png",
         "backgroundColor": "#44B57F"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
