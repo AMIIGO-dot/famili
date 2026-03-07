@@ -11,7 +11,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
+  Keyboard,
+  KeyboardEvent,
   Platform,
   ScrollView,
   StyleSheet,
@@ -69,6 +70,19 @@ export default function ShoppingListSheet({ visible, onClose, eventId, eventTitl
   const [creating, setCreating] = useState(false);
   const [itemText, setItemText] = useState('');
   const [addingItem, setAddingItem] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Track keyboard height so the add-input row rises above the keyboard.
+  // KeyboardAvoidingView is unreliable inside a detached BottomSheet.
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: KeyboardEvent) => setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const subShow = Keyboard.addListener(showEvent, onShow);
+    const subHide = Keyboard.addListener(hideEvent, onHide);
+    return () => { subShow.remove(); subHide.remove(); };
+  }, []);
 
   // Fetch items and subscribe to realtime when list becomes available or sheet opens
   useEffect(() => {
@@ -168,10 +182,10 @@ export default function ShoppingListSheet({ visible, onClose, eventId, eventTitl
           enablePanDownToClose
           snapPoints={list ? ['60%', '90%'] : ['45%']}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.kav}
-          >
+          {/* Shrink content by how much the keyboard overlaps the sheet.
+               Sheet bottom edge is already (insets.bottom + 12) above screen bottom,
+               so the true overlap is keyboardHeight minus that offset. */}
+          <View style={[styles.kav, { marginBottom: Math.max(keyboardHeight - insets.bottom - 12, 0) }]}>
             {/* ── Header ── */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
@@ -205,7 +219,7 @@ export default function ShoppingListSheet({ visible, onClose, eventId, eventTitl
                 </TouchableOpacity>
               </View>
             ) : (
-              <>
+              <View style={{ flex: 1 }}>
                 {/* ── Item counter ── */}
                 {items.length > 0 && (
                   <View style={styles.counterRow}>
@@ -269,7 +283,7 @@ export default function ShoppingListSheet({ visible, onClose, eventId, eventTitl
                 </ScrollView>
 
                 {/* ── Add item input ── */}
-                <View style={[styles.addRow, { paddingBottom: Math.max(insets.bottom, 12) + 4 }]}>
+                <View style={[styles.addRow, { paddingBottom: keyboardHeight > 0 ? 10 : Math.max(insets.bottom, 8) + 4 }]}>
                   <TextInput
                     ref={inputRef}
                     style={styles.addInput}
@@ -294,9 +308,9 @@ export default function ShoppingListSheet({ visible, onClose, eventId, eventTitl
                     <Ionicons name="add" size={22} color="#FAFAF8" />
                   </TouchableOpacity>
                 </View>
-              </>
+              </View>
             )}
-          </KeyboardAvoidingView>
+          </View>
         </BottomSheet.Content>
       </BottomSheet.Portal>
     </BottomSheet>
