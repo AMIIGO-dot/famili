@@ -33,30 +33,61 @@ CREATE INDEX IF NOT EXISTS shopping_items_list_id_idx     ON public.shopping_lis
 ALTER TABLE public.shopping_lists       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopping_list_items  ENABLE ROW LEVEL SECURITY;
 
--- Only parent members of the family can access shopping lists
+-- Family owner OR parent member can access shopping lists.
+-- Note: member rows for the family owner may have user_id = null (pre-migration),
+--       so we also check families.owner_id directly.
 CREATE POLICY "parents can manage shopping lists"
   ON public.shopping_lists FOR ALL
   USING (
-    EXISTS (
-      SELECT 1
-      FROM   public.members m
-      WHERE  m.family_id = shopping_lists.family_id
-        AND  m.user_id   = auth.uid()
-        AND  m.role      = 'parent'
-    )
+    EXISTS (SELECT 1 FROM public.families f
+            WHERE f.id = shopping_lists.family_id AND f.owner_id = auth.uid())
+    OR
+    EXISTS (SELECT 1 FROM public.members m
+            WHERE m.family_id = shopping_lists.family_id
+              AND m.user_id   = auth.uid()
+              AND m.role      = 'parent')
+  )
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM public.families f
+            WHERE f.id = shopping_lists.family_id AND f.owner_id = auth.uid())
+    OR
+    EXISTS (SELECT 1 FROM public.members m
+            WHERE m.family_id = shopping_lists.family_id
+              AND m.user_id   = auth.uid()
+              AND m.role      = 'parent')
   );
 
--- Only parent members of the owning family can access items
+-- Family owner OR parent member can access shopping list items.
 CREATE POLICY "parents can manage shopping list items"
   ON public.shopping_list_items FOR ALL
   USING (
     EXISTS (
-      SELECT 1
-      FROM   public.shopping_lists sl
+      SELECT 1 FROM public.shopping_lists sl
+      JOIN   public.families f ON f.id = sl.family_id
+      WHERE  sl.id = shopping_list_items.list_id AND f.owner_id = auth.uid()
+    )
+    OR
+    EXISTS (
+      SELECT 1 FROM public.shopping_lists sl
       JOIN   public.members m ON m.family_id = sl.family_id
-      WHERE  sl.id       = shopping_list_items.list_id
-        AND  m.user_id   = auth.uid()
-        AND  m.role      = 'parent'
+      WHERE  sl.id     = shopping_list_items.list_id
+        AND  m.user_id = auth.uid()
+        AND  m.role    = 'parent'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.shopping_lists sl
+      JOIN   public.families f ON f.id = sl.family_id
+      WHERE  sl.id = shopping_list_items.list_id AND f.owner_id = auth.uid()
+    )
+    OR
+    EXISTS (
+      SELECT 1 FROM public.shopping_lists sl
+      JOIN   public.members m ON m.family_id = sl.family_id
+      WHERE  sl.id     = shopping_list_items.list_id
+        AND  m.user_id = auth.uid()
+        AND  m.role    = 'parent'
     )
   );
 
