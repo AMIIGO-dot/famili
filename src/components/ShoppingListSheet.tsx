@@ -132,7 +132,11 @@ export default function ShoppingListSheet({ visible, onClose, eventId, eventTitl
   const handleAddItem = async () => {
     if (!list || !itemText.trim() || addingItem) return;
     setAddingItem(true);
-    await addItem(list.id, itemText.trim());
+    await addItem(
+      list.id,
+      itemText.trim(),
+      family && user ? { familyId: family.id, userId: user.id, eventTitle } : undefined,
+    );
     setItemText('');
     setAddingItem(false);
     // Keep keyboard open for quick sequential adds

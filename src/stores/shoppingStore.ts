@@ -30,7 +30,7 @@ interface ShoppingState {
   /** Returns total number of shopping lists for the family (for premium gating). */
   countListsForFamily: (familyId: string) => Promise<number>;
   createListForEvent: (eventId: string, familyId: string, userId: string) => Promise<ShoppingList | null>;
-  addItem: (listId: string, text: string) => Promise<ShoppingListItem | null>;
+  addItem: (listId: string, text: string, notifyParams?: { familyId: string; userId: string; eventTitle: string }) => Promise<ShoppingListItem | null>;
   toggleItem: (item: ShoppingListItem, checked: boolean, checkedBy: string) => Promise<void>;
   deleteItem: (itemId: string, listId: string) => Promise<void>;
   subscribeToList: (listId: string) => void;
@@ -118,7 +118,7 @@ export const useShoppingStore = create<ShoppingState>((set, get) => ({
     return list;
   },
 
-  addItem: async (listId, text) => {
+  addItem: async (listId, text, notifyParams) => {
     const existing = get().itemsByListId[listId] ?? [];
     const sortOrder = existing.length;
     const { data, error } = await (supabase as any)
@@ -137,6 +137,19 @@ export const useShoppingStore = create<ShoppingState>((set, get) => ({
       if (current.some((i) => i.id === item.id)) return state;
       return { itemsByListId: { ...state.itemsByListId, [listId]: [...current, item] } };
     });
+    // Notify other parents in the background (best-effort)
+    if (notifyParams) {
+      supabase.functions
+        .invoke('notify-shopping', {
+          body: {
+            family_id: notifyParams.familyId,
+            item_text: text.trim(),
+            event_title: notifyParams.eventTitle,
+            added_by_user_id: notifyParams.userId,
+          },
+        })
+        .catch((err) => console.warn('[ShoppingStore] notify-shopping error:', err));
+    }
     return item;
   },
 
