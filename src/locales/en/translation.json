@@ -149,7 +149,10 @@
     "copyright": "\u00a9 2026 FAMILU. All rights reserved."
   },
   "family": {
-    "confirmDelete": "Remove {{name}} from the family?"
+    "confirmDelete": "Remove {{name}} from the family?",
+    "addPhoto": "Add photo",
+    "changePhoto": "Change photo",
+    "removePhoto": "Remove photo"
   },
   "parentInvite": {
     "button": "Invite co-parent by email",

@@ -149,7 +149,10 @@
     "copyright": "\u00a9 2026 FAMILU. Alle Rechte vorbehalten."
   },
   "family": {
-    "confirmDelete": "{{name}} aus der Familie entfernen?"
+    "confirmDelete": "{{name}} aus der Familie entfernen?",
+    "addPhoto": "Foto hinzufügen",
+    "changePhoto": "Foto ändern",
+    "removePhoto": "Foto entfernen"
   },
   "parentInvite": {
     "button": "Co-Elternteil per E-Mail einladen",

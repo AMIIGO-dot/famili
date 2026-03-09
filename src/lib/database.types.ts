@@ -105,6 +105,7 @@ export type Database = {
           color: string;
           role: MemberRole;
           user_id: string | null; // Supabase auth UID — null until the member creates an account
+          avatar_url: string | null;
         };
         Insert: {
           id?: string;
@@ -113,6 +114,7 @@ export type Database = {
           color: string;
           role: MemberRole;
           user_id?: string | null;
+          avatar_url?: string | null;
         };
         Update: {
           id?: string;
@@ -121,6 +123,7 @@ export type Database = {
           color?: string;
           role?: MemberRole;
           user_id?: string | null;
+          avatar_url?: string | null;
         };
         Relationships: [];
       };

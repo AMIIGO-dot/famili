@@ -149,7 +149,10 @@
     "copyright": "© 2026 FAMILU. Alla rättigheter förbehållna."
   },
   "family": {
-    "confirmDelete": "Ta bort {{name}} ur familjen?"
+    "confirmDelete": "Ta bort {{name}} ur familjen?",
+    "addPhoto": "Lägg till foto",
+    "changePhoto": "Byt foto",
+    "removePhoto": "Ta bort foto"
   },  "parentInvite": {
     "button": "Bjud in medf\u00f6r\u00e4lder via e-post",
     "title": "Bjud in medf\u00f6r\u00e4lder",

@@ -23,16 +23,20 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { useIsPremium } from '../../src/lib/premium';
 import { usePurchaseStore } from '../../src/stores/purchaseStore';
 import InviteSheet from '../../src/components/InviteSheet';
+import MemberAvatar from '../../src/components/MemberAvatar';
 import { sendParentInvite } from '../../src/lib/familyInviteService';
+import { supabase } from '../../src/lib/supabase';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 const COLORS = [
   '#5B9CF6', '#F97B8B', '#68D9A4', '#F5A623',
   '#BF86FF', '#FF7043', '#26C6DA', '#8D8D99',
 ];
 
-const DEV_BYPASS = true; // keep in sync with familyStore
+const DEV_BYPASS = false; // keep in sync with familyStore
 
-type DraftMember = { id?: string; name: string; color: string; role: 'parent' | 'child' };
+type DraftMember = { id?: string; name: string; color: string; role: 'parent' | 'child'; avatarUrl?: string | null };
 
 export default function FamilyScreen() {
   const { t } = useTranslation();
@@ -83,21 +87,91 @@ export default function FamilyScreen() {
   };
 
   const openEdit = (m: typeof members[0]) => {
-    setEditing({ id: m.id, name: m.name, color: m.color, role: m.role as 'parent' | 'child' });
+    setEditing({ id: m.id, name: m.name, color: m.color, role: m.role as 'parent' | 'child', avatarUrl: m.avatar_url });
     setSheetOpen(true);
+  };
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('common.error'), 'Photo library access is required.');
+      return;
+    }
+
+    // Dismiss the sheet BEFORE launching the native picker.
+    // If the sheet stays open it sits on top of the picker or immediately
+    // steals focus back, causing the picker to vanish or drop the result.
+    setSheetOpen(false);
+
+    // Give the dismiss animation time to finish (~300 ms), then launch.
+    await new Promise<void>((resolve) => setTimeout(resolve, 350));
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.75,
+    });
+
+    // Re-open the sheet (editing state is preserved – we never cleared it).
+    setSheetOpen(true);
+
+    if (!result.canceled && result.assets[0]) {
+      setEditing((e) => e ? { ...e, avatarUrl: result.assets[0].uri } : e);
+    }
+  };
+
+  // Upload a local image URI to Supabase Storage and return the public URL.
+  // Uses expo-file-system (base64) to read the file — more reliable than fetch()
+  // for file:// and ph:// URIs on iOS.
+  const uploadAvatar = async (localUri: string, memberId: string): Promise<string | null> => {
+    try {
+      const raw = localUri.split('?')[0];
+      const ext = raw.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const safeExt = ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? ext : 'jpg';
+      const contentType = safeExt === 'png' ? 'image/png' : 'image/jpeg';
+      const path = `${family!.id}/${memberId}.${safeExt}`;
+
+      // Read file as base64, then convert to Uint8Array for the storage upload.
+      const base64 = await FileSystem.readAsStringAsync(localUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const binaryStr = atob(base64);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+
+      const { error } = await supabase.storage
+        .from('member-avatars')
+        .upload(path, bytes, { contentType, upsert: true });
+
+      if (error) {
+        Alert.alert(t('common.error'), `Upload failed: ${error.message}`);
+        return null;
+      }
+      const { data: pub } = supabase.storage.from('member-avatars').getPublicUrl(path);
+      return `${pub.publicUrl}?v=${Date.now()}`;
+    } catch (e: any) {
+      Alert.alert(t('common.error'), `Upload error: ${e?.message ?? 'Unknown'}`);
+      return null;
+    }
   };
 
   const handleSave = async () => {
     if (!editing || !editing.name.trim() || !family) return;
 
+    const isLocalUri = (uri?: string | null) =>
+      !!uri && (uri.startsWith('file://') || uri.startsWith('content://') || uri.startsWith('ph://'));
+
     if (DEV_BYPASS) {
-      // Mutate the store's members array directly (dev only)
       const store = useFamilyStore.getState();
       if (editing.id) {
         useFamilyStore.setState({
           members: store.members.map((m) =>
             m.id === editing.id
-              ? { ...m, name: editing.name.trim(), color: editing.color, role: editing.role }
+              ? { ...m, name: editing.name.trim(), color: editing.color, role: editing.role,
+                  avatar_url: editing.avatarUrl !== undefined ? editing.avatarUrl : m.avatar_url }
               : m
           ),
         });
@@ -108,6 +182,7 @@ export default function FamilyScreen() {
           name: editing.name.trim(),
           color: editing.color,
           role: editing.role,
+          avatar_url: editing.avatarUrl ?? null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         } as any;
@@ -115,18 +190,33 @@ export default function FamilyScreen() {
       }
     } else {
       if (editing.id) {
+        // Existing member: upload first, then update in one call
+        let avatarUrl: string | null | undefined = undefined;
+        if (isLocalUri(editing.avatarUrl)) {
+          const uploaded = await uploadAvatar(editing.avatarUrl!, editing.id);
+          // Only update if upload succeeded; don't clear existing avatar on failure
+          if (uploaded) avatarUrl = uploaded;
+        } else if (editing.avatarUrl === null) {
+          avatarUrl = null; // explicit clear (user tapped Remove photo)
+        }
         await updateMember(editing.id, {
           name: editing.name.trim(),
           color: editing.color,
           role: editing.role,
+          ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
         });
       } else {
-        await addMember({
+        // New member: insert first to get UUID, then upload
+        const saved = await addMember({
           family_id: family.id,
           name: editing.name.trim(),
           color: editing.color,
           role: editing.role,
         });
+        if (saved && isLocalUri(editing.avatarUrl)) {
+          const url = await uploadAvatar(editing.avatarUrl!, saved.id);
+          if (url) await updateMember(saved.id, { avatar_url: url });
+        }
       }
     }
     setSheetOpen(false);
@@ -186,10 +276,8 @@ export default function FamilyScreen() {
             onPress={() => currentMemberRole === 'parent' && openEdit(m)}
             activeOpacity={currentMemberRole === 'parent' ? 0.7 : 1}
           >
-            {/* Color avatar */}
-            <View style={[styles.avatar, { backgroundColor: m.color }]}>
-              <Text style={styles.avatarInitial}>{m.name.charAt(0).toUpperCase()}</Text>
-            </View>
+            {/* Avatar */}
+            <MemberAvatar name={m.name} color={m.color} avatarUrl={m.avatar_url} size={44} />
             {/* Info */}
             <View style={styles.memberInfo}>
               <Text style={styles.memberName}>{m.name}</Text>
@@ -267,6 +355,36 @@ export default function FamilyScreen() {
                     {editing?.id ? t('common.edit', 'Edit person') : t('onboarding.addMember', 'Add person')}
                   </Text>
                   <BottomSheet.Close />
+                </View>
+
+                {/* Avatar picker */}
+                <View style={styles.avatarPickerRow}>
+                  <MemberAvatar
+                    name={editing?.name || '?'}
+                    color={editing?.color ?? '#44B57F'}
+                    avatarUrl={editing?.avatarUrl}
+                    size={72}
+                  />
+                  <View style={styles.avatarPickerBtns}>
+                    <TouchableOpacity style={styles.avatarPickerBtn} onPress={pickImage} activeOpacity={0.7}>
+                      <Ionicons name="camera" size={16} color="#44B57F" />
+                      <Text style={styles.avatarPickerBtnText}>
+                        {editing?.avatarUrl ? t('family.changePhoto') : t('family.addPhoto')}
+                      </Text>
+                    </TouchableOpacity>
+                    {editing?.avatarUrl && (
+                      <TouchableOpacity
+                        style={styles.avatarPickerBtn}
+                        onPress={() => setEditing((e) => e ? { ...e, avatarUrl: null } : e)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="trash-outline" size={15} color="#FF3B30" />
+                        <Text style={[styles.avatarPickerBtnText, { color: '#FF3B30' }]}>
+                          {t('family.removePhoto')}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
 
                 {/* Name field */}
@@ -501,14 +619,28 @@ const styles = StyleSheet.create({
     elevation: 1,
     gap: 12,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  avatarPickerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 16,
+    marginBottom: 20,
+    marginTop: 4,
   },
-  avatarInitial: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  avatarPickerBtns: { flex: 1, gap: 8 },
+  avatarPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#F2F3F5',
+  },
+  avatarPickerBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#44B57F',
+  },
   memberInfo: { flex: 1 },
   memberName: { fontSize: 16, fontWeight: '600', color: '#2C2C2E' },
   memberRole: { fontSize: 12, color: '#9999A6', marginTop: 2 },
