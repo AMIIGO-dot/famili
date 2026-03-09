@@ -10,7 +10,7 @@
 
 import { supabase } from './supabase';
 
-const DEV_BYPASS = true;
+const DEV_BYPASS = false;
 
 interface PendingInvite {
   familyId: string;
@@ -50,20 +50,15 @@ export async function sendParentInvite(
     return;
   }
 
-  // Upsert: invalidate any earlier un-accepted invite for the same email + family
-  const { error } = await supabase.from('family_invites').upsert(
-    {
+  // Call edge function — stores invite in DB and sends invite email
+  const { error } = await supabase.functions.invoke('send-parent-invite', {
+    body: {
       family_id: familyId,
       email: normalised,
-      invited_by: invitedBy,
-      accepted_at: null,
-      accepted_by: null,
+      invited_by_user_id: invitedBy,
     },
-    { onConflict: 'family_id,email' },
-  );
+  });
   if (error) throw new Error(error.message);
-
-  // TODO: trigger Supabase Edge Function to send the email notification
 }
 
 export interface ClaimResult {

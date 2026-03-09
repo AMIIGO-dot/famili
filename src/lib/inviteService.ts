@@ -10,7 +10,7 @@
 
 import { supabase } from './supabase';
 
-const DEV_BYPASS = true;
+const DEV_BYPASS = false;
 
 // In-memory store for dev
 const DEV_CODES = new Map<string, { memberId: string; familyId: string; expiresAt: Date }>();

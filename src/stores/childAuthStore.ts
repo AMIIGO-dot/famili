@@ -17,7 +17,7 @@ import { redeemInviteCode, type RedeemResult } from '../lib/inviteService';
 import { useFamilyStore } from './familyStore';
 
 const PIN_KEY = (userId: string) => `familj_child_pin_${userId}`;
-const DEV_BYPASS = true;
+const DEV_BYPASS = false;
 
 interface ChildAuthState {
   // True once PIN has been verified this session (in-memory only)
