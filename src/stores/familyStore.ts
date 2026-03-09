@@ -99,8 +99,23 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
           await get().fetchSubscription(joinedFamily.owner_id);
         }
       } else {
-        // No family found — hard clear all family data
-        set({ family: null, members: [], currentMember: null, currentMemberRole: 'parent' });
+        // No family found via RLS-guarded queries.
+        // Anonymous child users may be blocked by RLS — fall back to edge function
+        // which uses the admin client and can see all member rows.
+        const { data: childData, error: fnErr } = await supabase.functions.invoke(
+          'get-child-family',
+        );
+        if (!fnErr && childData?.family) {
+          set({
+            family: childData.family,
+            members: childData.members ?? [],
+          });
+          get().resolveCurrentMember(userId);
+          await get().fetchSubscription(childData.family.owner_id);
+        } else {
+          // Truly no family — hard clear all family data
+          set({ family: null, members: [], currentMember: null, currentMemberRole: 'parent' });
+        }
       }
     } catch (err) {
       console.error('[FamilyStore] fetchFamily error:', err);

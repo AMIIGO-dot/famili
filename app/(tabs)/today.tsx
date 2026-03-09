@@ -344,7 +344,7 @@ export default function TodayScreen() {
     }
   }, [family?.id]);
 
-  const allOccurrences = getOccurrencesForRange(todayStart, todayEnd);
+  const allOccurrences = getOccurrencesForRange(todayStart, todayEnd, currentMemberRole);
 
   // Push today's events to the iOS home screen widget
   // eslint-disable-next-line react-hooks/exhaustive-deps
