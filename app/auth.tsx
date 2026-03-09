@@ -172,6 +172,30 @@ export default function AuthScreen() {
           </View>
         )}
 
+        {/* Sign in / Create account sub-toggle (password mode only) */}
+        {step === 'email' && authMode === 'password' && (
+          <View style={[styles.modeToggle, { marginBottom: 20 }]}>
+            <TouchableOpacity
+              style={[styles.modeBtn, pwSubMode === 'signin' && styles.modeBtnActive]}
+              onPress={() => setPwSubMode('signin')}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.modeBtnText, pwSubMode === 'signin' && styles.modeBtnTextActive]}>
+                {t('auth.signIn')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeBtn, pwSubMode === 'signup' && styles.modeBtnActive]}
+              onPress={() => setPwSubMode('signup')}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.modeBtnText, pwSubMode === 'signup' && styles.modeBtnTextActive]}>
+                {t('auth.createAccount')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Email step (shared by both modes) */}
         {step === 'email' && (
           <>
@@ -197,7 +221,11 @@ export default function AuthScreen() {
                 <ActivityIndicator color="#FAFAF8" />
               ) : (
                 <Text style={styles.buttonText}>
-                  {authMode === 'otp' ? t('auth.sendCode') : t('auth.signIn')}
+                  {authMode === 'otp'
+                    ? t('auth.sendCode')
+                    : pwSubMode === 'signin'
+                    ? t('auth.signIn')
+                    : t('auth.createAccount')}
                 </Text>
               )}
             </TouchableOpacity>
