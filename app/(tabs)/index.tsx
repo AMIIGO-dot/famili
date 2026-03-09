@@ -39,6 +39,7 @@ import {
 } from '../../src/lib/time';
 import { useEventsStore, EventOccurrence } from '../../src/stores/eventStore';
 import { useFamilyStore } from '../../src/stores/familyStore';
+import MemberAvatar from '../../src/components/MemberAvatar';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 import { useIsPremium } from '../../src/lib/premium';
@@ -325,8 +326,8 @@ export default function WeeklyViewScreen() {
               ]}
               onPress={() => setSelectedMemberId(sel ? ALL_ID : m.id)}
             >
-              <View style={[styles.filterAvatar, { backgroundColor: sel ? 'rgba(255,255,255,0.35)' : m.color }]}>
-                <Text style={styles.filterAvatarText}>{m.name.charAt(0).toUpperCase()}</Text>
+              <View style={[styles.filterAvatar, { backgroundColor: sel ? 'rgba(255,255,255,0.35)' : m.color, overflow: 'hidden', borderRadius: 10 }]}>
+                <MemberAvatar name={m.name} color={m.color} avatarUrl={m.avatar_url} size={20} />
               </View>
               <Text style={[styles.filterChipText, sel && styles.filterChipTextSel]}>
                 {m.name}
@@ -437,8 +438,8 @@ export default function WeeklyViewScreen() {
                           {assignedMembers.length > 0 && (
                             <View style={styles.memberDots}>
                               {assignedMembers.map((m) => (
-                                <View key={m.id} style={[styles.memberDot, { backgroundColor: m.color }]}>
-                                  <Text style={styles.memberDotText}>{m.name.charAt(0).toUpperCase()}</Text>
+                                <View key={m.id} style={[styles.memberDot, { backgroundColor: m.color, overflow: 'hidden' }]}>
+                                  <MemberAvatar name={m.name} color={m.color} avatarUrl={m.avatar_url} size={18} />
                                 </View>
                               ))}
                             </View>

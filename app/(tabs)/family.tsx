@@ -27,7 +27,6 @@ import MemberAvatar from '../../src/components/MemberAvatar';
 import { sendParentInvite } from '../../src/lib/familyInviteService';
 import { supabase } from '../../src/lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 
 const COLORS = [
   '#5B9CF6', '#F97B8B', '#68D9A4', '#F5A623',
@@ -36,7 +35,7 @@ const COLORS = [
 
 const DEV_BYPASS = false; // keep in sync with familyStore
 
-type DraftMember = { id?: string; name: string; color: string; role: 'parent' | 'child'; avatarUrl?: string | null };
+type DraftMember = { id?: string; name: string; color: string; role: 'parent' | 'child'; avatarUrl?: string | null; avatarBase64?: string | null; avatarExt?: string };
 
 export default function FamilyScreen() {
   const { t } = useTranslation();
@@ -87,7 +86,7 @@ export default function FamilyScreen() {
   };
 
   const openEdit = (m: typeof members[0]) => {
-    setEditing({ id: m.id, name: m.name, color: m.color, role: m.role as 'parent' | 'child', avatarUrl: m.avatar_url });
+    setEditing({ id: m.id, name: m.name, color: m.color, role: m.role as 'parent' | 'child', avatarUrl: m.avatar_url, avatarBase64: null });
     setSheetOpen(true);
   };
 
@@ -111,47 +110,32 @@ export default function FamilyScreen() {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.75,
+      base64: true,
     });
 
     // Re-open the sheet (editing state is preserved – we never cleared it).
     setSheetOpen(true);
 
     if (!result.canceled && result.assets[0]) {
-      setEditing((e) => e ? { ...e, avatarUrl: result.assets[0].uri } : e);
+      const asset = result.assets[0];
+      const rawExt = asset.uri.split('?')[0].split('.').pop()?.toLowerCase() ?? 'jpg';
+      const ext = ['jpg', 'jpeg', 'png', 'webp'].includes(rawExt) ? rawExt : 'jpg';
+      setEditing((e) => e ? { ...e, avatarUrl: asset.uri, avatarBase64: asset.base64 ?? null, avatarExt: ext } : e);
     }
   };
 
-  // Upload a local image URI to Supabase Storage and return the public URL.
-  // Uses expo-file-system (base64) to read the file — more reliable than fetch()
-  // for file:// and ph:// URIs on iOS.
-  const uploadAvatar = async (localUri: string, memberId: string): Promise<string | null> => {
+  // Upload a base64-encoded image via edge function (service-role bypasses storage RLS).
+  const uploadAvatar = async (base64Data: string, memberId: string, ext: string): Promise<string | null> => {
     try {
-      const raw = localUri.split('?')[0];
-      const ext = raw.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const safeExt = ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? ext : 'jpg';
-      const contentType = safeExt === 'png' ? 'image/png' : 'image/jpeg';
-      const path = `${family!.id}/${memberId}.${safeExt}`;
-
-      // Read file as base64, then convert to Uint8Array for the storage upload.
-      const base64 = await FileSystem.readAsStringAsync(localUri, {
-        encoding: FileSystem.EncodingType.Base64,
+      const { data, error } = await supabase.functions.invoke('upload-member-avatar', {
+        body: { base64: base64Data, memberId, ext },
       });
-      const binaryStr = atob(base64);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i);
-      }
 
-      const { error } = await supabase.storage
-        .from('member-avatars')
-        .upload(path, bytes, { contentType, upsert: true });
-
-      if (error) {
-        Alert.alert(t('common.error'), `Upload failed: ${error.message}`);
+      if (error || !data?.publicUrl) {
+        Alert.alert(t('common.error'), `Upload failed: ${error?.message ?? data?.error ?? 'Unknown'}`);
         return null;
       }
-      const { data: pub } = supabase.storage.from('member-avatars').getPublicUrl(path);
-      return `${pub.publicUrl}?v=${Date.now()}`;
+      return data.publicUrl as string;
     } catch (e: any) {
       Alert.alert(t('common.error'), `Upload error: ${e?.message ?? 'Unknown'}`);
       return null;
@@ -160,9 +144,6 @@ export default function FamilyScreen() {
 
   const handleSave = async () => {
     if (!editing || !editing.name.trim() || !family) return;
-
-    const isLocalUri = (uri?: string | null) =>
-      !!uri && (uri.startsWith('file://') || uri.startsWith('content://') || uri.startsWith('ph://'));
 
     if (DEV_BYPASS) {
       const store = useFamilyStore.getState();
@@ -192,8 +173,8 @@ export default function FamilyScreen() {
       if (editing.id) {
         // Existing member: upload first, then update in one call
         let avatarUrl: string | null | undefined = undefined;
-        if (isLocalUri(editing.avatarUrl)) {
-          const uploaded = await uploadAvatar(editing.avatarUrl!, editing.id);
+        if (editing.avatarBase64) {
+          const uploaded = await uploadAvatar(editing.avatarBase64, editing.id, editing.avatarExt ?? 'jpg');
           // Only update if upload succeeded; don't clear existing avatar on failure
           if (uploaded) avatarUrl = uploaded;
         } else if (editing.avatarUrl === null) {
@@ -213,8 +194,8 @@ export default function FamilyScreen() {
           color: editing.color,
           role: editing.role,
         });
-        if (saved && isLocalUri(editing.avatarUrl)) {
-          const url = await uploadAvatar(editing.avatarUrl!, saved.id);
+        if (saved && editing.avatarBase64) {
+          const url = await uploadAvatar(editing.avatarBase64, saved.id, editing.avatarExt ?? 'jpg');
           if (url) await updateMember(saved.id, { avatar_url: url });
         }
       }
