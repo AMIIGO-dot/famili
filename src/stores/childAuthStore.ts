@@ -13,11 +13,13 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { supabase } from '../lib/supabase';
-import { redeemInviteCode, type RedeemResult } from '../lib/inviteService';
-import { useFamilyStore } from './familyStore';
 
 const PIN_KEY = (userId: string) => `familj_child_pin_${userId}`;
-const DEV_BYPASS = false;
+
+export interface RedeemResult {
+  memberId: string;
+  familyId: string;
+}
 
 interface ChildAuthState {
   // True once PIN has been verified this session (in-memory only)
@@ -49,38 +51,26 @@ export const useChildAuthStore = create<ChildAuthState>((set) => ({
     try {
       let userId: string;
 
-      if (DEV_BYPASS) {
-        // Simulate anonymous sign-in
-        userId = `dev-child-${Date.now()}`;
-      } else {
-        // Sign in anonymously to get a real Supabase user
-        const { data, error } = await supabase.auth.signInAnonymously();
-        if (error || !data.user) {
-          return { success: false, error: error?.message ?? 'Sign in failed' };
-        }
-        userId = data.user.id;
+      // Sign in anonymously to get a real Supabase user
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error || !data.user) {
+        return { success: false, error: error?.message ?? 'Sign in failed' };
       }
+      userId = data.user.id;
 
-      const result = await redeemInviteCode(code, userId);
-      if (!result) {
+      // Call edge function — validates code, marks used, links user_id to member
+      // (admin client bypasses members_owner RLS for the user not yet in any family)
+      const { data: redeemData, error: fnErr } = await supabase.functions.invoke(
+        'redeem-invite-code',
+        { body: { code } },
+      );
+      if (fnErr || !redeemData || redeemData.error) {
         return { success: false, error: 'invalid_code' };
       }
-
-      // Link the anonymous user to the member row in the family store
-      if (!DEV_BYPASS) {
-        await supabase
-          .from('members')
-          .update({ user_id: userId })
-          .eq('id', result.memberId);
-      } else {
-        // Update in-memory member
-        const store = useFamilyStore.getState();
-        useFamilyStore.setState({
-          members: store.members.map((m) =>
-            m.id === result.memberId ? { ...m, user_id: userId } : m
-          ),
-        });
-      }
+      const result: RedeemResult = {
+        memberId: redeemData.memberId,
+        familyId: redeemData.familyId,
+      };
 
       set({ pendingJoin: { userId, result } });
       return { success: true, result };

@@ -144,16 +144,15 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   checkPendingInvite: async (email: string, userId: string) => {
-    const { claimPendingInvite } = await import('../lib/familyInviteService');
-    const result = await claimPendingInvite(email, userId);
-    if (!result) return;
-
-    // We've been accepted into a family — fetch it
     try {
+      // Use edge function — admin client bypasses members_owner RLS for INSERT
+      const { data, error } = await supabase.functions.invoke('claim-parent-invite');
+      if (error || !data?.familyId) return;
+
       const { data: familyData, error: famErr } = await supabase
         .from('families')
         .select('*')
-        .eq('id', result.familyId)
+        .eq('id', data.familyId)
         .single();
       if (famErr || !familyData) return;
 
